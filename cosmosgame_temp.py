@@ -16,6 +16,7 @@ RED = (255, 0, 0)
 ORANGE = (255, 127, 0)
 YELLOW = (255, 255, 0)
 GREEN = (0, 255, 0)
+BLUE = (0, 0, 255)
 NAVY = (75, 0, 130)
 PURPLE = (143, 0, 255)
 
@@ -36,14 +37,14 @@ max_lives = 5
 # 레벨 시스템 및 보스 레이드 변수
 level = 1
 level_up_score_threshold = 100
-last_boss_raid_score = 0  # Tracks the score at the last boss raid completion
+last_boss_raid_score = 0
 
 # 배경 이미지 로드 및 크기 설정
 background_image = pygame.image.load("background1.png")
 background_image = pygame.transform.scale(background_image, (WIDTH, HEIGHT))
 
 # 배경 이미지2 로드
-background_image_2 = pygame.image.load("background2.png")
+background_image_2= pygame.image.load("background2.png")
 background_image_2 = pygame.transform.scale(background_image_2, (WIDTH, HEIGHT))
 
 # 무적 상태 변수
@@ -106,18 +107,13 @@ def update_boss_velocity():
 
 # 보스 스폰 위치 조정 함수
 def get_boss_spawn_position():
-    min_distance = 200  # Minimum distance from the rocket
-    attempts = 0
-    max_attempts = 100
-    while attempts < max_attempts:
+    min_distance = 200
+    while True:
         x = random.randint(0, WIDTH)
-        y = random.randint(0, HEIGHT)  # Spawn within the screen
+        y = random.randint(0, HEIGHT)
         distance = math.hypot(rocket_pos[0] - x, rocket_pos[1] - y)
         if distance >= min_distance:
             return x, y
-        attempts += 1
-    # Fallback position if suitable position not found
-    return random.randint(0, WIDTH), random.randint(0, HEIGHT)
 
 # 블랙홀 이미지 로드
 blackhole_image = pygame.image.load("black.png")
@@ -141,12 +137,8 @@ paused = False
 game_started = False
 game_over = False
 
-# 게임 상태 변수 추가
-game_state = "START"  # Possible states: START, MAIN_GAME, BOSS_RAID, PAUSED, GAME_OVER
-
 # 초기 화면 표시 함수
 def show_start_screen():
-    screen.blit(background_image_2, (0, 0))  # Ensure background is drawn first
     title_text = font.render("Cosmos Game", True, WHITE)
     screen.blit(title_text, (WIDTH // 2 - title_text.get_width() // 2, HEIGHT // 2 - 100))
     
@@ -164,7 +156,7 @@ def show_start_screen():
 
     pygame.display.flip()
     return start_button, exit_button
-
+    
 # 먼지 및 장애물 생성 함수
 def create_dust():
     x = random.randint(0, WIDTH)
@@ -188,7 +180,6 @@ def create_extra_life():
 
 # 파이어볼 생성 함수
 def create_fireballs():
-    global fireballs
     # 레벨에 따라 생성할 파이어볼 개수 설정
     fireball_count = 4 + (level - 4) // 3  # 4단계부터 4개, 이후 3레벨마다 1개씩 증가
     fireballs.clear()  # 기존 파이어볼 제거 후 새로 생성
@@ -201,9 +192,6 @@ def create_fireballs():
         direction_y = rocket_pos[1] - y
         distance = math.hypot(direction_x, direction_y)
         
-        if distance == 0:
-            distance = 1  # Prevent division by zero
-
         speed = 8  # 파이어볼 속도
         velocity_x = (direction_x / distance) * speed
         velocity_y = (direction_y / distance) * speed
@@ -271,7 +259,7 @@ def check_collisions():
 
 # 블랙홀 흡입 함수
 def check_blackhole_collision():
-    global rocket_pos, rocket_angle, game_over, lives
+    global rocket_pos, rocket_angle, game_over
     for blackhole in blackholes:
         distance = math.hypot(rocket_pos[0] - blackhole.centerx, rocket_pos[1] - blackhole.centery)
         if distance < 100:
@@ -282,9 +270,7 @@ def check_blackhole_collision():
             rocket_pos[1] += math.sin(angle) * 3
             rocket_angle += 10
             if distance < 20:
-                lives -= 1  # Reduce lives instead of immediate game over
-                if lives <= 0:
-                    game_over = True
+                game_over = True
 
 # 초기 먼지 및 장애물 생성
 for _ in range(10):
@@ -296,24 +282,30 @@ for _ in range(2):
 
 # 게임 초기화 함수
 def reset_game():
-    global score, level, lives, scroll_speed, game_over, fireballs, obstacles, dusts, blackholes, extra_lives, rocket_pos, obstacle_angles, obstacle_speeds
-    global highscore, BOSS_RAID, last_boss_raid_score, game_state
+    global score, level, lives, scroll_speed, game_over, fireballs, obstacles, dusts, blackholes, extra_lives
+    global rocket_pos, obstacle_angles, obstacle_speeds, highscore, BOSS_RAID, boss_spawn_time, boss_survival_time, last_boss_raid_score
     score = 0
     level = 1
     lives = 3
-    scroll_speed = 5
+    scroll_speed = base_scroll_speed
+    game_over = False
+    highscore = max(highscore, score)  # 이전 최고 점수 유지
+    rocket_pos = [WIDTH // 2, HEIGHT // 2]
+
+    # 장애물, 먼지, 기타 초기화
     blackholes = [create_blackhole() for _ in range(2)]
     obstacles = [create_obstacle() for _ in range(5)]
     dusts = [create_dust() for _ in range(10)]
-    rocket_pos = [WIDTH // 2, HEIGHT // 2]
     obstacle_angles = [0] * len(obstacles)
     obstacle_speeds = [random.randint(1, 10) for _ in range(len(obstacles))]
     extra_lives.clear()
     fireballs.clear()
-    game_over = False
-    BOSS_RAID = False  # Reset boss raid status
-    last_boss_raid_score = 0  # Reset last boss raid score
-    game_state = "MAIN_GAME"  # Set game state to main game
+
+    # 보스 레이드 상태 초기화
+    BOSS_RAID = False
+    boss_spawn_time = pygame.time.get_ticks()  # 보스 스폰 시간 초기화
+    boss_survival_time = boss_duration  # 보스 생존 시간 초기화
+    last_boss_raid_score = 0  # 마지막 보스 레이드 점수 초기화
 
 # 로켓 이동 함수
 def move_rocket(keys):
@@ -331,7 +323,7 @@ def move_rocket(keys):
 
 # 파이어볼 이동 및 반사 처리 함수
 def move_fireballs():
-    global lives, game_over
+    global lives
     for fireball in fireballs[:]:
         fireball["rect"].x += fireball["velocity"][0]
         fireball["rect"].y += fireball["velocity"][1]
@@ -345,6 +337,7 @@ def move_fireballs():
             fireballs.remove(fireball)
             if lives <= 0:
                 game_over = True
+
 
 # 일시 정지 화면 표시 함수
 def show_pause_menu():
@@ -378,157 +371,48 @@ def show_pause_menu():
     pygame.display.flip()
     return continue_button, restart_button, menu_button, exit_button
 
-# 보스 레이드 화면 표시 함수
-def show_boss_raid_screen():
-    # Clear screen and show boss raid specific background or elements
-    screen.blit(background_image, (0, 0))  # You can change this to a different background if desired
-    boss_text = font.render("Boss Raid!", True, RED)
-    screen.blit(boss_text, (WIDTH // 2 - boss_text.get_width() // 2, HEIGHT // 2 - 150))
-    pygame.display.flip()
-
 # 메인 게임 루프
 running = True
+game_over = False
 while running:
-    if game_state == "START":
+    if not game_started:
         # 초기 화면
         start_button, exit_button = show_start_screen()
+        screen.blit(background_image_2, (0, 0))
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 running = False
             if event.type == pygame.MOUSEBUTTONDOWN:
                 mouse_pos = event.pos
                 if start_button.collidepoint(mouse_pos):
-                    game_state = "MAIN_GAME"  # 게임 시작
+                    game_started = True  # 게임 시작
                 elif exit_button.collidepoint(mouse_pos):
                     running = False      # 게임 종료
-        clock.tick(40)
         continue  # 초기 화면이 사라질 때까지 루프 지속
 
-    elif game_state == "MAIN_GAME":
-        # 메인 게임 화면
-        screen.blit(background_image, (0, 0))
-        current_time = pygame.time.get_ticks()
-
-        if BOSS_RAID and not game_over:
-            game_state = "BOSS_RAID"
-            boss_spawn_time = pygame.time.get_ticks()
-            boss_current_scale = 1.0
-            boss_growing = True
-            spawn_x, spawn_y = get_boss_spawn_position()
-            boss_rect.center = (spawn_x, spawn_y)
-            boss_image = pygame.transform.scale(boss_image_original, (150, 150))
-            boss_velocity = [0, 0]
-            boss_survival_time = boss_duration  # Reset survival time
-            continue  # Move to next iteration to handle BOSS_RAID state
-
-        # 레벨 업 체크 및 보스 레이드 트리거
-        if level >= 4 and score >= last_boss_raid_score + 300:
-            BOSS_RAID = True
-
-        for event in pygame.event.get():
-            if event.type == pygame.QUIT:
-                running = False
-            # 일시 정지 상태 토글 (P키로 일시 정지)
-            if event.type == pygame.KEYDOWN and event.key == pygame.K_p:
-                game_state = "PAUSED"
-
-            # 게임 종료 상태에서 리트라이 처리
-            if game_over and event.type == pygame.MOUSEBUTTONDOWN:
-                mouse_pos = event.pos
-                # 게임 오버 상태에서는 'Retry', 'Menu', 'Exit' 버튼이 표시되므로 handle here
-                # We'll handle game over in the "GAME_OVER" state
-                pass
-
-        if not game_over:
-            if score >= level * level_up_score_threshold:
-                level += 1
-                scroll_speed = min(scroll_speed + 1, max_scroll_speed)
-                obstacles.append(create_obstacle())
-                obstacle_angles.append(0)
-                obstacle_speeds.append(random.randint(1, 10))
-                if level % 2 == 0:
-                    blackholes.append(create_blackhole())
-                extra_lives.append(create_extra_life())
-            if level >= 4 and current_time - last_fireball_time > fireball_spawn_interval:
-                create_fireballs()
-                last_fireball_time = current_time
-
-            handle_invincibility()
-            keys = pygame.key.get_pressed()
-            move_rocket(keys)
-            check_collisions()
-            check_blackhole_collision()
-            move_fireballs()
-            render_rocket()
-            
-            # 화면 그리기
-            for fireball in fireballs:
-                screen.blit(fireball_image, fireball["rect"].topleft)
-
-            for dust in dusts:
-                dust.y += scroll_speed
-                if dust.y > HEIGHT:
-                    dusts.remove(dust)
-                    dusts.append(create_dust())
-                screen.blit(dust_image, dust.topleft)
-
-            for i, obstacle in enumerate(obstacles):
-                obstacle.y += scroll_speed
-                if obstacle.y > HEIGHT:
-                    obstacles.remove(obstacle)
-                    obstacles.append(create_obstacle())
-                    obstacle_angles.pop(i)
-                    obstacle_speeds.pop(i)
-                    obstacle_angles.append(0)
-                    obstacle_speeds.append(random.randint(1, 10))
-                obstacle_angles[i] = (obstacle_angles[i] + obstacle_speeds[i]) % 360
-                rotated_rock_image = pygame.transform.rotate(rock_image, obstacle_angles[i])
-                rotated_rect = rotated_rock_image.get_rect(center=(obstacle.x + 20, obstacle.y + 20))
-                screen.blit(rotated_rock_image, rotated_rect.topleft)
-
-            for life in extra_lives[:]:
-                if math.hypot(rocket_pos[0] - life.centerx, rocket_pos[1] - life.centery) < 25:
-                    lives = min(lives + 1, max_lives)
-                    extra_lives.remove(life)
-
-            for life in extra_lives:
-                life.y += scroll_speed
-                if life.y > HEIGHT:
-                    extra_lives.remove(life)
-                else:
-                    screen.blit(heart_image, life)
-
-            for blackhole in blackholes:
-                blackhole.y += scroll_speed - 1
-                if blackhole.y > HEIGHT:
-                    blackholes.remove(blackhole)
-                    blackholes.append(create_blackhole())
-                screen.blit(blackhole_image, blackhole)
-
-            rotated_rocket_rect = rocket_image.get_rect(center=(rocket_pos[0], rocket_pos[1]))
-            screen.blit(rocket_image, rotated_rocket_rect.topleft)
-
-            score_text = font.render(f"Score: {score}", True, WHITE)
-            level_text = font.render(f"Level: {level}", True, WHITE)
-            highscore_text = font.render(f"Highscore: {highscore}", True, WHITE)
-            screen.blit(score_text, (10, 10))
-            screen.blit(level_text, (10, 50))
-            screen.blit(highscore_text, (10, 90))
-            for i in range(lives):
-                screen.blit(heart_image, (WIDTH - (i + 1) * 40, 10))
-
-        else:
-            game_state = "GAME_OVER"
-
-        pygame.display.flip()
-        clock.tick(40)
-
-    elif game_state == "BOSS_RAID":
+    # 메인 게임 화면
+    screen.blit(background_image, (0, 0))
+    current_time = pygame.time.get_ticks()
+    if BOSS_RAID and not game_over:
         # 보스 레이드 상태
-        screen.blit(background_image, (0, 0))  # Background for boss raid
+        screen.blit(background_image, (0, 0))
+
+        # 보스 이미지 그리기
+        screen.blit(boss_image, boss_rect.topleft)
+
+        # 로켓 이동 처리
+        keys = pygame.key.get_pressed()
+        if keys[pygame.K_w]: rocket_pos[1] -= base_speed
+        if keys[pygame.K_s]: rocket_pos[1] += base_speed
+        if keys[pygame.K_a]: rocket_pos[0] -= base_speed
+        if keys[pygame.K_d]: rocket_pos[0] += base_speed
+        rocket_pos[0] = max(0, min(WIDTH, rocket_pos[0]))
+        rocket_pos[1] = max(0, min(HEIGHT, rocket_pos[1]))
+
+        # 보스의 속도를 로켓을 향해 업데이트
+        update_boss_velocity()
 
         # 보스 움직임 업데이트
-        update_boss_velocity()
         boss_rect.x += boss_velocity[0]
         boss_rect.y += boss_velocity[1]
 
@@ -537,7 +421,7 @@ while running:
             boss_current_scale += boss_scale_increment
             new_size = (int(150 * boss_current_scale), int(150 * boss_current_scale))
             boss_image = pygame.transform.scale(boss_image_original, new_size)
-            boss_rect = boss_image.get_rect(center=(boss_rect.centerx, boss_rect.centery))
+            boss_rect = boss_image.get_rect(center=boss_rect.center)
             if boss_current_scale >= 3.0:
                 boss_growing = False
         else:
@@ -545,108 +429,171 @@ while running:
                 boss_current_scale -= boss_scale_increment
                 new_size = (int(150 * boss_current_scale), int(150 * boss_current_scale))
                 boss_image = pygame.transform.scale(boss_image_original, new_size)
-                boss_rect = boss_image.get_rect(center=(boss_rect.centerx, boss_rect.centery))
+                boss_rect = boss_image.get_rect(center=boss_rect.center)
 
         # 보스 생존 타이머 업데이트
         elapsed_time = (pygame.time.get_ticks() - boss_spawn_time) / 1000
         remaining_time = boss_survival_time - elapsed_time
+        if remaining_time <= 0:
+            BOSS_RAID = False
 
-        for event in pygame.event.get():
-            if event.type == pygame.QUIT:
-                running = False
-            # 일시 정지 상태 토글 (P키로 일시 정지)
-            if event.type == pygame.KEYDOWN and event.key == pygame.K_p:
-                game_state = "PAUSED"
+        # 충돌 체크: 로켓과 보스 간 충돌
+        if math.hypot(rocket_pos[0] - boss_rect.centerx, rocket_pos[1] - boss_rect.centery) < (boss_rect.width // 2):
+            lives -= 2
+            if lives <= 0:
+                game_over = True
+            else:
+                new_x, new_y = get_boss_spawn_position()
+                boss_rect.center = (new_x, new_y)
+                boss_growing = True
+                boss_current_scale = 1.0
 
-        if not game_over:
-            # 레벨 업 체크 및 보스 레이드 종료
-            if remaining_time <= 0:
-                BOSS_RAID = False
-                game_state = "MAIN_GAME"
-                last_boss_raid_score = score  # **Update the last_boss_raid_score here**
-                continue  # Proceed to the main game
+        # 화면 그리기
+        rotated_rocket_rect = rocket_image.get_rect(center=(rocket_pos[0], rocket_pos[1]))
+        screen.blit(rocket_image, rotated_rocket_rect.topleft)
 
-            # 로켓 이동 처리
-            keys = pygame.key.get_pressed()
-            move_rocket(keys)
+        # 보스 생존 타이머 표시
+        timer_text = font.render(f"Survive for {int(remaining_time)} seconds!", True, WHITE)
+        screen.blit(timer_text, (WIDTH // 2 - timer_text.get_width() // 2, 20))
+    else:
+        # 레벨 업 체크 및 보스 레이드 트리거
+        if level >= 2 and score >= last_boss_raid_score + 100:
+            BOSS_RAID = True
+            boss_spawn_time = pygame.time.get_ticks()
+            boss_current_scale = 1.0
+            boss_growing = True
+            spawn_x, spawn_y = get_boss_spawn_position()
+            boss_rect.center = (spawn_x, spawn_y)
+            boss_image = pygame.transform.scale(boss_image_original, (150, 150))
+            boss_velocity = [0, 0]
+            boss_survival_time += 1
+            last_boss_raid_score = score
 
-            # 보스와 로켓 간 충돌 체크
-            distance = math.hypot(rocket_pos[0] - boss_rect.centerx, rocket_pos[1] - boss_rect.centery)
-            if distance < (boss_rect.width // 2):
-                lives -= 2
-                if lives <= 0:
-                    game_over = True
-                else:
-                    new_x, new_y = get_boss_spawn_position()
-                    boss_rect.center = (new_x, new_y)
-                    boss_growing = True
-                    boss_current_scale = 1.0
-                    invincible = True
-                    invincible_start_time = pygame.time.get_ticks()
+    for event in pygame.event.get():
+        if event.type == pygame.QUIT:
+            running = False
+        # 일시 정지 상태 토글 (P키로 일시 정지)
+        if event.type == pygame.KEYDOWN and event.key == pygame.K_p:
+            paused = not paused
 
-            # 블랙홀 흡입 기능 유지 (optional)
-            check_blackhole_collision()
+        # 게임 종료 상태에서 리트라이 처리
+        if game_over and event.type == pygame.MOUSEBUTTONDOWN:
+            mouse_pos = event.pos
+            if retry_button.collidepoint(mouse_pos):
+                score = 0
+                level = 1
+                lives = 3
+                scroll_speed = 5
+                blackholes = [create_blackhole() for _ in range(2)]
+                obstacles = [create_obstacle() for _ in range(5)]
+                dusts = [create_dust() for _ in range(10)]
+                rocket_pos = [WIDTH // 2, HEIGHT // 2]
+                obstacle_angles = [0] * len(obstacles)
+                obstacle_speeds = [random.randint(1, 10) for _ in range(len(obstacles))]
+                extra_lives.clear()
+                fireballs.clear()
+                game_over = False
 
-            # 충돌 체크: 로켓과 보스 간 충돌 (Avoid duplicate handling)
-            # **Removed duplicated collision handling to prevent interference with the survival timer**
-
-            handle_invincibility()
-            check_blackhole_collision()
-
-            # 화면 그리기
-            rotated_rocket_rect = rocket_image.get_rect(center=(rocket_pos[0], rocket_pos[1]))
-            screen.blit(rocket_image, rotated_rocket_rect.topleft)
-
-            # 보스 이미지 그리기
-            screen.blit(boss_image, boss_rect.topleft)
-
-            # 보스 생존 타이머 표시
-            timer_text = font.render(f"Survive for {int(remaining_time)} seconds!", True, WHITE)
-            screen.blit(timer_text, (WIDTH // 2 - timer_text.get_width() // 2, 20))
-
-            # 점수, 레벨, 하이스코어 및 생명 표시
-            score_text = font.render(f"Score: {score}", True, WHITE)
-            level_text = font.render(f"Level: {level}", True, WHITE)
-            highscore_text = font.render(f"Highscore: {highscore}", True, WHITE)
-            screen.blit(score_text, (10, 10))
-            screen.blit(level_text, (10, 50))
-            screen.blit(highscore_text, (10, 90))
-            for i in range(lives):
-                screen.blit(heart_image, (WIDTH - (i + 1) * 40, 10))
-
-        else:
-            game_state = "GAME_OVER"
-
-        pygame.display.flip()
-        clock.tick(40)
-
-    elif game_state == "PAUSED":
-        # 일시 정지 상태
+    # 일시 정지 상태 처리
+    if paused:
         continue_button, restart_button, menu_button, exit_button = show_pause_menu()
         for event in pygame.event.get():
-            if event.type == pygame.QUIT:
-                running = False
-            elif event.type == pygame.MOUSEBUTTONDOWN:
+            if event.type == pygame.MOUSEBUTTONDOWN:
                 mouse_pos = event.pos
-                # Continue 버튼
                 if continue_button.collidepoint(mouse_pos):
-                    game_state = "MAIN_GAME" if not BOSS_RAID else "BOSS_RAID"
-                # Restart 버튼
+                    paused = False  # 게임 계속
                 elif restart_button.collidepoint(mouse_pos):
                     reset_game()  # 게임 재시작
-                # Menu 버튼
+                    paused = False
                 elif menu_button.collidepoint(mouse_pos):
                     reset_game()
-                    game_state = "START"  # 초기 화면으로 돌아가기
-                # Exit 버튼
+                    game_started = False  # 초기 화면으로 돌아가기
+                    paused = False
                 elif exit_button.collidepoint(mouse_pos):
                     running = False  # 게임 종료
-        clock.tick(40)
         continue  # 일시 정지 상태에서는 게임 루프 중단
 
-    elif game_state == "GAME_OVER":
-        # 게임 오버 화면
+    if not game_over:
+        if score >= level * level_up_score_threshold:
+            level += 1
+            scroll_speed = min(scroll_speed + 1, max_scroll_speed)
+            obstacles.append(create_obstacle())
+            obstacle_angles.append(0)
+            obstacle_speeds.append(random.randint(1, 10))
+            if level % 2 == 0:
+                blackholes.append(create_blackhole())
+            extra_lives.append(create_extra_life())
+        if level >= 4 and current_time - last_fireball_time > fireball_spawn_interval:
+            create_fireballs()
+            last_fireball_time = current_time
+
+        handle_invincibility()
+        keys = pygame.key.get_pressed()
+        move_rocket(keys)
+        check_collisions()
+        check_blackhole_collision()
+        move_fireballs()
+        render_rocket()
+        
+        # 화면 그리기
+        for fireball in fireballs:
+            screen.blit(fireball_image, fireball["rect"].topleft)
+
+        for dust in dusts:
+            dust.y += scroll_speed
+            if dust.y > HEIGHT:
+                dusts.remove(dust)
+                dusts.append(create_dust())
+            screen.blit(dust_image, dust.topleft)
+
+        for i, obstacle in enumerate(obstacles):
+            obstacle.y += scroll_speed
+            if obstacle.y > HEIGHT:
+                obstacles.remove(obstacle)
+                obstacles.append(create_obstacle())
+                obstacle_angles.pop(i)
+                obstacle_speeds.pop(i)
+                obstacle_angles.append(0)
+                obstacle_speeds.append(random.randint(1, 10))
+            obstacle_angles[i] = (obstacle_angles[i] + obstacle_speeds[i]) % 360
+            rotated_rock_image = pygame.transform.rotate(rock_image, obstacle_angles[i])
+            rotated_rect = rotated_rock_image.get_rect(center=(obstacle.x + 20, obstacle.y + 20))
+            screen.blit(rotated_rock_image, rotated_rect.topleft)
+
+        for life in extra_lives[:]:
+            if math.hypot(rocket_pos[0] - life.centerx, rocket_pos[1] - life.centery) < 25:
+                lives = min(lives + 1, max_lives)
+                extra_lives.remove(life)
+
+        for life in extra_lives:
+            life.y += scroll_speed
+            if life.y > HEIGHT:
+                extra_lives.remove(life)
+            else:
+                screen.blit(heart_image, life)
+
+        for blackhole in blackholes:
+            blackhole.y += scroll_speed - 1
+            if blackhole.y > HEIGHT:
+                blackholes.remove(blackhole)
+                blackholes.append(create_blackhole())
+            screen.blit(blackhole_image, blackhole)
+
+        rotated_rocket_rect = rocket_image.get_rect(center=(rocket_pos[0], rocket_pos[1]))
+        screen.blit(rocket_image, rotated_rocket_rect.topleft)
+
+        score_text = font.render(f"Score: {score}", True, WHITE)
+        level_text = font.render(f"Level: {level}", True, WHITE)
+        highscore_text = font.render(f"Highscore: {highscore}", True, WHITE)
+        screen.blit(score_text, (10, 10))
+        screen.blit(level_text, (10, 50))
+        screen.blit(highscore_text, (10, 90))
+        for i in range(lives):
+            screen.blit(heart_image, (WIDTH - (i + 1) * 40, 10))
+
+    else:
         screen.fill(BLACK)
+        last_boss_raid_score = 0
         end_text = font.render(f"Game Over! Final Score: {score}", True, WHITE)
         screen.blit(end_text, (WIDTH // 2 - end_text.get_width() // 2, HEIGHT // 2 - 100))
         if score > highscore:
@@ -682,13 +629,16 @@ while running:
                 mouse_pos = event.pos
                 if retry_button.collidepoint(mouse_pos):
                     reset_game()  # 게임 재시작
-                    game_state = "MAIN_GAME"
+                    game_over = False
                 elif menu_button.collidepoint(mouse_pos):
                     reset_game()
-                    game_state = "START"  # 초기 화면으로 돌아가기
+                    game_started = False  # 초기 화면으로 돌아가기
+                    paused = False
                 elif exit_button.collidepoint(mouse_pos):
                     running = False  # 게임 종료
-        clock.tick(40)
         continue  # 게임 오버 상태에서는 루프 중단
+
+    pygame.display.flip()
+    clock.tick(40)
 
 pygame.quit()
