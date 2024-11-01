@@ -432,13 +432,16 @@ while running:
         end_text = font.render(f"Game Over! Final Score: {score}", True, WHITE)
         screen.blit(end_text, (WIDTH // 2 - end_text.get_width() // 2, HEIGHT // 2 - 100))
         if score > highscore:
-          highscore = score
-        highscore_text = font.render(f"Highscore: {highscore}", True, WHITE)  # 최고 점수 표시
+            highscore = score
+        highscore_text = font.render(f"Highscore: {highscore}", True, WHITE)
         screen.blit(highscore_text, (WIDTH // 2 - highscore_text.get_width() // 2, HEIGHT // 2 - 60))
+
+        # Retry 버튼
         retry_button = pygame.Rect(WIDTH // 2 - 50, HEIGHT // 2, 100, 40)
         pygame.draw.rect(screen, BLUE, retry_button)
         retry_text = font.render("Retry", True, WHITE)
         screen.blit(retry_text, (retry_button.x + 10, retry_button.y + 5))
+
         # Menu 버튼
         menu_button = pygame.Rect(WIDTH // 2 - 50, HEIGHT // 2 + 60, 100, 40)
         pygame.draw.rect(screen, BLUE, menu_button)
@@ -450,7 +453,25 @@ while running:
         pygame.draw.rect(screen, BLUE, exit_button)
         exit_text = font.render("Exit", True, WHITE)
         screen.blit(exit_text, (exit_button.x + 20, exit_button.y + 5))
-    
+
+        pygame.display.flip()
+
+        # 버튼 클릭 이벤트 처리
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                running = False
+            elif event.type == pygame.MOUSEBUTTONDOWN:
+                mouse_pos = event.pos
+                if retry_button.collidepoint(mouse_pos):
+                    reset_game()  # 게임 재시작
+                    game_over = False
+                elif menu_button.collidepoint(mouse_pos):
+                    game_started = False  # 초기 화면으로 돌아가기
+                    game_over = False
+                elif exit_button.collidepoint(mouse_pos):
+                    running = False  # 게임 종료
+        continue  # 게임 오버 상태에서는 루프 중단
+
     pygame.display.flip()
     clock.tick(30)
 
