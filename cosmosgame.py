@@ -6,7 +6,7 @@ import math
 pygame.init()
 WIDTH, HEIGHT = 800, 600
 screen = pygame.display.set_mode((WIDTH, HEIGHT))
-pygame.display.set_caption("무한 우주 먼지 수집 로켓")
+pygame.display.set_caption("COSMOS GAME")
 
 # 색상 정의
 WHITE = (255, 255, 255)
@@ -98,7 +98,7 @@ game_over = False
 # 초기 화면 표시 함수
 def show_start_screen():
     screen.fill(BLACK)
-    title_text = font.render("Game", True, WHITE)
+    title_text = font.render("Cosmos Game", True, WHITE)
     screen.blit(title_text, (WIDTH // 2 - title_text.get_width() // 2, HEIGHT // 2 - 100))
     
     # Start 버튼
