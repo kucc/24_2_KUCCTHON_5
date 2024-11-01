@@ -23,6 +23,10 @@ scroll_speed = 2
 max_scroll_speed = 10
 speed_increase_interval = 5000
 
+# 레벨 시스템 추가
+level = 1
+level_up_score_threshold = 100  # 각 레벨에서 필요한 점수
+
 # 로켓 설정
 rocket_image = pygame.image.load("rocket.png")  # 로켓 이미지 로드
 rocket_image = pygame.transform.scale(rocket_image, (50, 50))  # 로켓 크기를 50x50으로 조정
@@ -144,7 +148,9 @@ while running:
         if game_over and event.type == pygame.MOUSEBUTTONDOWN:
             mouse_pos = event.pos
             if retry_button.collidepoint(mouse_pos):
+                # 게임 리셋
                 score = 0
+                level = 1
                 scroll_speed = 2
                 blackholes = [create_blackhole() for _ in range(2)]
                 obstacles = [create_obstacle() for _ in range(5)]
@@ -153,8 +159,13 @@ while running:
                 game_over = False
 
     if not game_over:
-        if current_time % speed_increase_interval < 50:
-            scroll_speed = min(scroll_speed + 1, max_scroll_speed)
+        # 점수에 따라 레벨 업
+        if score >= level * level_up_score_threshold:
+            level += 1
+            scroll_speed = min(scroll_speed + 1, max_scroll_speed)  # 속도 증가
+            obstacles.append(create_obstacle())  # 장애물 추가
+            if level % 2 == 0:
+                blackholes.append(create_blackhole())  # 블랙홀 추가
 
         keys = pygame.key.get_pressed()
         move_rocket(keys)
@@ -190,10 +201,14 @@ while running:
         rotated_rocket_rect = rocket_image.get_rect(center=(rocket_pos[0], rocket_pos[1]))
         screen.blit(rocket_image, rotated_rocket_rect.topleft)
 
+        # 점수 및 레벨 표시
         score_text = font.render(f"Score: {score}", True, WHITE)
+        level_text = font.render(f"Level: {level}", True, WHITE)
         screen.blit(score_text, (10, 10))
+        screen.blit(level_text, (10, 50))
 
     else:
+        # 게임 오버 화면
         screen.fill(BLACK)
         end_text = font.render(f"Game Over! Final Score: {score}", True, WHITE)
         screen.blit(end_text, (WIDTH // 2 - end_text.get_width() // 2, HEIGHT // 2 - 30))
