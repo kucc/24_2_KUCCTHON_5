@@ -91,13 +91,13 @@ def show_start_screen():
     start_button = pygame.Rect(WIDTH // 2 - 50, HEIGHT // 2, 100, 40)
     pygame.draw.rect(screen, BLUE, start_button)
     start_text = font.render("Start", True, WHITE)
-    screen.blit(start_text, (start_button.x + 20, start_button.y + 5))
+    screen.blit(start_text, (start_button.x + 10, start_button.y + 5))
 
     # Exit 버튼
     exit_button = pygame.Rect(WIDTH // 2 - 50, HEIGHT // 2 + 60, 100, 40)
     pygame.draw.rect(screen, BLUE, exit_button)
     exit_text = font.render("Exit", True, WHITE)
-    screen.blit(exit_text, (exit_button.x + 25, exit_button.y + 5))
+    screen.blit(exit_text, (exit_button.x + 15, exit_button.y + 5))
 
     pygame.display.flip()
     return start_button, exit_button
@@ -262,7 +262,7 @@ def show_pause_menu():
     continue_button = pygame.Rect(WIDTH // 2 - 70, HEIGHT // 2, 150, 40)
     pygame.draw.rect(screen, BLUE, continue_button)
     continue_text = font.render("Continue", True, WHITE)
-    screen.blit(continue_text, (continue_button.x + 15, continue_button.y + 5))
+    screen.blit(continue_text, (continue_button.x + 5, continue_button.y + 5))
 
     # Restart 버튼
     restart_button = pygame.Rect(WIDTH // 2 - 70, HEIGHT // 2 + 60, 150, 40)
@@ -430,15 +430,26 @@ while running:
     else:
         screen.fill(BLACK)
         end_text = font.render(f"Game Over! Final Score: {score}", True, WHITE)
-        screen.blit(end_text, (WIDTH // 2 - end_text.get_width() // 2, HEIGHT // 2 - 30))
+        screen.blit(end_text, (WIDTH // 2 - end_text.get_width() // 2, HEIGHT // 2 - 100))
         if score > highscore:
           highscore = score
         highscore_text = font.render(f"Highscore: {highscore}", True, WHITE)  # 최고 점수 표시
-        screen.blit(highscore_text, (WIDTH // 2 - highscore_text.get_width() // 2, HEIGHT // 2 + 30))
-        retry_button = pygame.Rect(WIDTH // 2 - 50, HEIGHT // 2 + 70, 100, 40)
+        screen.blit(highscore_text, (WIDTH // 2 - highscore_text.get_width() // 2, HEIGHT // 2 - 60))
+        retry_button = pygame.Rect(WIDTH // 2 - 50, HEIGHT // 2, 100, 40)
         pygame.draw.rect(screen, BLUE, retry_button)
         retry_text = font.render("Retry", True, WHITE)
         screen.blit(retry_text, (retry_button.x + 10, retry_button.y + 5))
+        # Menu 버튼
+        menu_button = pygame.Rect(WIDTH // 2 - 50, HEIGHT // 2 + 60, 100, 40)
+        pygame.draw.rect(screen, BLUE, menu_button)
+        menu_text = font.render("Menu", True, WHITE)
+        screen.blit(menu_text, (menu_button.x + 15, menu_button.y + 5))
+
+        # Exit 버튼
+        exit_button = pygame.Rect(WIDTH // 2 - 50, HEIGHT // 2 + 120, 100, 40)
+        pygame.draw.rect(screen, BLUE, exit_button)
+        exit_text = font.render("Exit", True, WHITE)
+        screen.blit(exit_text, (exit_button.x + 20, exit_button.y + 5))
     
     pygame.display.flip()
     clock.tick(30)
