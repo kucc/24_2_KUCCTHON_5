@@ -75,6 +75,9 @@ last_fireball_time = 0
 obstacle_angles = [0] * 5
 obstacle_speeds = [random.randint(1, 10) for _ in range(5)]
 
+# 일시 정지 상태 변수
+paused = False
+
 # 먼지 및 장애물 생성 함수
 def create_dust():
     x = random.randint(0, WIDTH)
@@ -198,6 +201,27 @@ def move_fireballs():
             if lives <= 0:
                 game_over = True
 
+# 일시 정지 화면 표시 함수
+def show_pause_menu():
+    screen.fill(BLACK)
+    pause_text = font.render("Game Paused", True, WHITE)
+    screen.blit(pause_text, (WIDTH // 2 - pause_text.get_width() // 2, HEIGHT // 2 - 60))
+    
+    # Continue 버튼
+    continue_button = pygame.Rect(WIDTH // 2 - 70, HEIGHT // 2, 150, 40)
+    pygame.draw.rect(screen, BLUE, continue_button)
+    continue_text = font.render("Continue", True, WHITE)
+    screen.blit(continue_text, (continue_button.x + 10, continue_button.y + 5))
+
+    # Exit 버튼
+    exit_button = pygame.Rect(WIDTH // 2 - 70, HEIGHT // 2 + 60, 150, 40)
+    pygame.draw.rect(screen, BLUE, exit_button)
+    exit_text = font.render("Exit", True, WHITE)
+    screen.blit(exit_text, (exit_button.x + 25, exit_button.y + 5))
+
+    pygame.display.flip()
+    return continue_button, exit_button
+
 # 메인 게임 루프
 running = True
 game_over = False
@@ -208,6 +232,11 @@ while running:
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
             running = False
+        # 일시 정지 상태 토글 (P키로 일시 정지)
+        if event.type == pygame.KEYDOWN and event.key == pygame.K_p:
+            paused = not paused
+
+        # 게임 종료 상태에서 리트라이 처리
         if game_over and event.type == pygame.MOUSEBUTTONDOWN:
             mouse_pos = event.pos
             if retry_button.collidepoint(mouse_pos):
@@ -225,6 +254,18 @@ while running:
                 fireballs.clear()
                 game_over = False
 
+    # 일시 정지 상태 처리
+    if paused:
+        continue_button, exit_button = show_pause_menu()
+        for event in pygame.event.get():
+            if event.type == pygame.MOUSEBUTTONDOWN:
+                mouse_pos = event.pos
+                if continue_button.collidepoint(mouse_pos):
+                    paused = False  # 게임 계속
+                elif exit_button.collidepoint(mouse_pos):
+                    running = False  # 게임 종료
+        continue
+
     if not game_over:
         if score >= level * level_up_score_threshold:
             level += 1
@@ -238,11 +279,14 @@ while running:
         if level >= 4 and current_time - last_fireball_time > fireball_spawn_interval:
             create_fireballs()
             last_fireball_time = current_time
+
         keys = pygame.key.get_pressed()
         move_rocket(keys)
         check_collisions()
         check_blackhole_collision()
         move_fireballs()
+        
+        # 화면 그리기
         for fireball in fireballs:
             screen.blit(fireball_image, fireball["rect"].topleft)
 
