@@ -22,6 +22,7 @@ score = 0
 scroll_speed = 2
 max_scroll_speed = 10
 speed_increase_interval = 5000
+lives = 3  # 플레이어의 목숨 수
 
 # 레벨 시스템 추가
 level = 1
@@ -123,7 +124,7 @@ def check_blackhole_collision():
 
 # 충돌 체크 함수
 def check_collisions():
-    global score
+    global score, lives, game_over
     for dust in dusts[:]:
         if math.hypot(rocket_pos[0] - dust.x, rocket_pos[1] - dust.y) < 25:
             score += 10
@@ -132,8 +133,13 @@ def check_collisions():
 
     for obstacle in obstacles:
         if check_pixel_collision(obstacle):  # 픽셀 충돌 검사
-            return True
-    return False
+            lives -= 1  # 충돌 시 목숨 감소
+            obstacles.remove(obstacle)  # 충돌한 장애물 제거
+            obstacles.append(create_obstacle())  # 새로운 장애물 생성
+            if lives <= 0:
+                game_over = True
+            return False
+    return True
 
 # 메인 게임 루프
 running = True
@@ -151,6 +157,7 @@ while running:
                 # 게임 리셋
                 score = 0
                 level = 1
+                lives = 3  # 목숨 초기화
                 scroll_speed = 2
                 blackholes = [create_blackhole() for _ in range(2)]
                 obstacles = [create_obstacle() for _ in range(5)]
@@ -169,8 +176,7 @@ while running:
 
         keys = pygame.key.get_pressed()
         move_rocket(keys)
-        if check_collisions():
-            game_over = True
+        check_collisions()
 
         check_blackhole_collision()
 
@@ -201,11 +207,13 @@ while running:
         rotated_rocket_rect = rocket_image.get_rect(center=(rocket_pos[0], rocket_pos[1]))
         screen.blit(rocket_image, rotated_rocket_rect.topleft)
 
-        # 점수 및 레벨 표시
+        # 점수, 레벨 및 목숨 표시
         score_text = font.render(f"Score: {score}", True, WHITE)
         level_text = font.render(f"Level: {level}", True, WHITE)
+        lives_text = font.render(f"Lives: {lives}", True, WHITE)
         screen.blit(score_text, (10, 10))
         screen.blit(level_text, (10, 50))
+        screen.blit(lives_text, (10, 90))
 
     else:
         # 게임 오버 화면
