@@ -29,6 +29,10 @@ max_lives = 5  # 최대 목숨 개수
 level = 1
 level_up_score_threshold = 100  # 각 레벨에서 필요한 점수
 
+# 배경 이미지 로드 및 크기 설정
+background_image = pygame.image.load("background.png")
+background_image = pygame.transform.scale(background_image, (WIDTH, HEIGHT))
+
 # 로켓 설정
 rocket_image = pygame.image.load("rocket.png")  # 로켓 이미지 로드
 rocket_image = pygame.transform.scale(rocket_image, (50, 50))  # 로켓 크기를 50x50으로 조정
@@ -174,7 +178,9 @@ def check_collisions():
 running = True
 game_over = False
 while running:
-    screen.fill(BLACK)
+    # 배경 이미지 그리기
+    screen.blit(background_image, (0, 0))
+
     current_time = pygame.time.get_ticks()
 
     for event in pygame.event.get():
