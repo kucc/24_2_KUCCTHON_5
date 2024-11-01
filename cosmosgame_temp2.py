@@ -529,6 +529,12 @@ while running:
                 boost_text = font.render("BOOST MODE!", True, ORANGE)
                 screen.blit(boost_text, (WIDTH // 2 - boost_text.get_width() // 2, HEIGHT // 2 - 80))
                 invincible = True  # 부스터 동안 무적 상태 유지
+                
+                # *** 부스터 중 파티클 생성 ***
+                for _ in range(5):  # 한 번에 여러 파티클 생성
+                    color = random.choice([RED, ORANGE, YELLOW])
+                    vel = (random.uniform(-3, 3), random.uniform(1, 4))
+                    create_particle((rocket_pos[0], rocket_pos[1] + 25), vel, 5, color, 500)
         else:
             current_scroll_speed = scroll_speed  # 기본 스크롤 속도 적용
 
