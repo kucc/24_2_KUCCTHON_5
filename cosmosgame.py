@@ -105,10 +105,16 @@ def move_rocket(keys):
 
     # 회전된 로켓 이미지 생성
     rocket_image = pygame.transform.rotate(original_rocket_image, rocket_angle)
+    
+    # 로켓 이동
     if keys[pygame.K_w]: rocket_pos[1] -= 5
     if keys[pygame.K_s]: rocket_pos[1] += 5
     if keys[pygame.K_a]: rocket_pos[0] -= 5
     if keys[pygame.K_d]: rocket_pos[0] += 5
+    
+    # 화면 밖으로 나가지 않도록 위치 제한
+    rocket_pos[0] = max(0, min(WIDTH, rocket_pos[0]))
+    rocket_pos[1] = max(0, min(HEIGHT, rocket_pos[1]))
 
 # 픽셀 충돌 체크 함수
 def check_pixel_collision(obstacle):
