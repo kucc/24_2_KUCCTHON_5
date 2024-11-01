@@ -52,6 +52,10 @@ rock_image = pygame.transform.scale(rock_image, (40, 40))  # 운석 크기를 40
 blackhole_image = pygame.image.load("black.png")  # 블랙홀 이미지 (black.png 파일)
 blackhole_image = pygame.transform.scale(blackhole_image, (80, 80))  # 블랙홀 크기를 80x80으로 조정
 
+# 각 운석의 회전 각도와 회전 속도 리스트
+obstacle_angles = [0] * 5  # 초기 운석 개수만큼 각도 0으로 설정
+obstacle_speeds = [random.randint(1, 10) for _ in range(5)]  # 각 운석의 회전 속도를 1~10 범위에서 랜덤으로 설정
+
 # 먼지 및 장애물 생성 함수
 def create_dust():
     x = random.randint(0, WIDTH)
@@ -135,11 +139,15 @@ def check_collisions():
             dusts.remove(dust)
             dusts.append(create_dust())
 
-    for obstacle in obstacles:
+    for i, obstacle in enumerate(obstacles):
         if check_pixel_collision(obstacle):  # 픽셀 충돌 검사
             lives -= 1  # 충돌 시 목숨 감소
             obstacles.remove(obstacle)  # 충돌한 장애물 제거
             obstacles.append(create_obstacle())  # 새로운 장애물 생성
+            obstacle_angles.pop(i)  # 회전 각도 초기화
+            obstacle_speeds.pop(i)  # 제거된 운석의 회전 속도도 삭제
+            obstacle_angles.append(0)  # 새로운 장애물의 초기 각도 추가
+            obstacle_speeds.append(random.randint(1, 10))  # 새로운 장애물의 회전 속도 추가
             if lives <= 0:
                 game_over = True
             return False
@@ -167,6 +175,8 @@ while running:
                 obstacles = [create_obstacle() for _ in range(5)]
                 dusts = [create_dust() for _ in range(10)]
                 rocket_pos = [WIDTH // 2, HEIGHT // 2]
+                obstacle_angles = [0] * len(obstacles)  # 각도 초기화
+                obstacle_speeds = [random.randint(1, 10) for _ in range(len(obstacles))]  # 각 운석의 회전 속도 재설정
                 game_over = False
 
     if not game_over:
@@ -175,13 +185,14 @@ while running:
             level += 1
             scroll_speed = min(scroll_speed + 1, max_scroll_speed)  # 속도 증가
             obstacles.append(create_obstacle())  # 장애물 추가
+            obstacle_angles.append(0)  # 새 장애물의 초기 각도 추가
+            obstacle_speeds.append(random.randint(1, 10))  # 새 장애물의 회전 속도 추가
             if level % 2 == 0:
                 blackholes.append(create_blackhole())  # 블랙홀 추가
 
         keys = pygame.key.get_pressed()
         move_rocket(keys)
         check_collisions()
-
         check_blackhole_collision()
 
         for dust in dusts:
@@ -190,16 +201,24 @@ while running:
                 dusts.remove(dust)
                 dusts.append(create_dust())
 
-        for obstacle in obstacles:
+        for i, obstacle in enumerate(obstacles):
             obstacle.y += scroll_speed
             if obstacle.y > HEIGHT:
                 obstacles.remove(obstacle)
                 obstacles.append(create_obstacle())
+                obstacle_angles.pop(i)
+                obstacle_speeds.pop(i)
+                obstacle_angles.append(0)
+                obstacle_speeds.append(random.randint(1, 10))  # 새로운 장애물의 회전 속도 추가
+
+            # 운석 회전 각도를 각기 다른 속도로 증가시키고 회전된 이미지 생성
+            obstacle_angles[i] = (obstacle_angles[i] + obstacle_speeds[i]) % 360  # 개별 속도만큼 회전
+            rotated_rock_image = pygame.transform.rotate(rock_image, obstacle_angles[i])
+            rotated_rect = rotated_rock_image.get_rect(center=(obstacle.x + 20, obstacle.y + 20))
+            screen.blit(rotated_rock_image, rotated_rect.topleft)
 
         for dust in dusts:
             pygame.draw.rect(screen, WHITE, dust)
-        for obstacle in obstacles:
-            screen.blit(rock_image, obstacle)
 
         for blackhole in blackholes:
             blackhole.y += scroll_speed - 1
@@ -211,18 +230,15 @@ while running:
         rotated_rocket_rect = rocket_image.get_rect(center=(rocket_pos[0], rocket_pos[1]))
         screen.blit(rocket_image, rotated_rocket_rect.topleft)
 
-        # 점수 및 레벨 표시
         score_text = font.render(f"Score: {score}", True, WHITE)
         level_text = font.render(f"Level: {level}", True, WHITE)
         screen.blit(score_text, (10, 10))
         screen.blit(level_text, (10, 50))
 
-        # 남은 목숨에 따라 하트 이미지 표시
         for i in range(lives):
             screen.blit(heart_image, (WIDTH - (i + 1) * 40, 10))  # 오른쪽 상단에 하트 이미지를 배치
 
     else:
-        # 게임 오버 화면
         screen.fill(BLACK)
         end_text = font.render(f"Game Over! Final Score: {score}", True, WHITE)
         screen.blit(end_text, (WIDTH // 2 - end_text.get_width() // 2, HEIGHT // 2 - 30))
