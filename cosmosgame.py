@@ -206,13 +206,13 @@ def check_collisions():
                 obstacle_speeds.pop(i)
                 obstacle_angles.append(0)
                 obstacle_speeds.append(random.randint(1, 10))
-                render_rocket()
-                # 무적 상태 시작
-                invincible = True
-                invincible_start_time = pygame.time.get_ticks()
-
                 if lives <= 0:
                     game_over = True
+                    break
+                # 무적 상태 시작
+                render_rocket()
+                invincible = True
+                invincible_start_time = pygame.time.get_ticks()           
                 return False
     return True
 
@@ -513,6 +513,6 @@ while running:
         continue  # 게임 오버 상태에서는 루프 중단
 
     pygame.display.flip()
-    clock.tick(30)
+    clock.tick(40)
 
 pygame.quit()
