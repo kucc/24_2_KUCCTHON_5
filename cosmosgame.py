@@ -22,55 +22,64 @@ score = 0
 scroll_speed = 5
 max_scroll_speed = 10
 speed_increase_interval = 5000
-lives = 3  # 플레이어의 초기 목숨 수
-max_lives = 5  # 최대 목숨 개수
+lives = 3
+max_lives = 5
 
 # 레벨 시스템 추가
 level = 1
-level_up_score_threshold = 100  # 각 레벨에서 필요한 점수
+level_up_score_threshold = 100
 
 # 배경 이미지 로드 및 크기 설정
 background_image = pygame.image.load("background1.png")
 background_image = pygame.transform.scale(background_image, (WIDTH, HEIGHT))
 
 # 로켓 설정
-rocket_image = pygame.image.load("rocket.png")  # 로켓 이미지 로드
-rocket_image = pygame.transform.scale(rocket_image, (50, 50))  # 로켓 크기를 50x50으로 조정
-rocket_pos = [WIDTH // 2, HEIGHT // 2]  # 화면 중앙에서 시작
-rocket_angle = 0  # 로켓의 회전 각도
-original_rocket_image = rocket_image  # 원래의 로켓 이미지 보관
+rocket_image = pygame.image.load("rocket.png")
+rocket_image = pygame.transform.scale(rocket_image, (50, 50))
+rocket_pos = [WIDTH // 2, HEIGHT // 2]
+rocket_angle = 0
+original_rocket_image = rocket_image
 
 # 하트 이미지 로드 및 크기 설정
 heart_image = pygame.image.load("heart.png")
-heart_image = pygame.transform.scale(heart_image, (30, 30))  # 하트 이미지 크기를 30x30으로 조정
+heart_image = pygame.transform.scale(heart_image, (30, 30))
 
 # 먼지 이미지 로드 및 크기 설정
 dust_image = pygame.image.load("star.png")
-dust_image = pygame.transform.scale(dust_image, (15, 15))  # 먼지 이미지를 15x15 크기로 조정
+dust_image = pygame.transform.scale(dust_image, (15, 15))
 
 # 장애물 및 먼지 리스트
 dusts = []
 obstacles = []
 blackholes = []
-extra_lives = []  # 화면에 표시되는 목숨 아이템 목록
+extra_lives = []
 
 # 장애물 이미지 로드
-rock_image = pygame.image.load("rock_obstacle.png")  # 기존 운석 이미지
-rock_image = pygame.transform.scale(rock_image, (40, 40))  # 운석 크기를 40x40으로 조정
+rock_image = pygame.image.load("rock_obstacle.png")
+rock_image = pygame.transform.scale(rock_image, (40, 40))
 
 # 블랙홀 이미지 로드
-blackhole_image = pygame.image.load("black.png")  # 블랙홀 이미지 (black.png 파일)
-blackhole_image = pygame.transform.scale(blackhole_image, (80, 80))  # 블랙홀 크기를 80x80으로 조정
+blackhole_image = pygame.image.load("black.png")
+blackhole_image = pygame.transform.scale(blackhole_image, (80, 80))
+
+# 파이어볼 이미지 로드
+fireball_image = pygame.image.load("fire.png")
+fireball_image = pygame.transform.scale(fireball_image, (20, 20))
+
+# 파이어볼 리스트
+fireballs = []
+fireball_spawn_interval = 7000
+last_fireball_time = 0
 
 # 각 운석의 회전 각도와 회전 속도 리스트
-obstacle_angles = [0] * 5  # 초기 운석 개수만큼 각도 0으로 설정
-obstacle_speeds = [random.randint(1, 10) for _ in range(5)]  # 각 운석의 회전 속도를 1~10 범위에서 랜덤으로 설정
+obstacle_angles = [0] * 5
+obstacle_speeds = [random.randint(1, 10) for _ in range(5)]
 
 # 먼지 및 장애물 생성 함수
 def create_dust():
     x = random.randint(0, WIDTH)
     y = random.randint(-HEIGHT, 0)
-    return pygame.Rect(x, y, 15, 15)  # 먼지의 크기를 이미지 크기인 15x15로 조정
+    return pygame.Rect(x, y, 15, 15)
 
 def create_obstacle():
     x = random.randint(0, WIDTH)
@@ -85,55 +94,55 @@ def create_blackhole():
 def create_extra_life():
     x = random.randint(0, WIDTH - 30)
     y = random.randint(-HEIGHT, 0)
-    return pygame.Rect(x, y, 30, 30)  # 크기는 heart.png와 맞게 30x30으로 설정
+    return pygame.Rect(x, y, 30, 30)
 
-# 초기 먼지 및 장애물 생성
-for _ in range(10):
-    dusts.append(create_dust())
-for _ in range(5):
-    obstacles.append(create_obstacle())
-for _ in range(2):  # 블랙홀은 적은 빈도로 나타나도록 설정
-    blackholes.append(create_blackhole())
-
-# 로켓 이동 함수
-def move_rocket(keys):
-    global rocket_image, rocket_angle
-
-    # A와 D 키에 따라 로켓 기울기 조정
-    if keys[pygame.K_a]:
-        rocket_angle = 45  # 왼쪽으로 기울기
-    elif keys[pygame.K_d]:
-        rocket_angle = -45  # 오른쪽으로 기울기
-    else:
-        rocket_angle = 0  # 키에서 손을 떼면 원래 상태로 복구
-
-    # 회전된 로켓 이미지 생성
-    rocket_image = pygame.transform.rotate(original_rocket_image, rocket_angle)
-    
-    # 로켓 이동
-    if keys[pygame.K_w]: rocket_pos[1] -= 5
-    if keys[pygame.K_s]: rocket_pos[1] += 5
-    if keys[pygame.K_a]: rocket_pos[0] -= 5
-    if keys[pygame.K_d]: rocket_pos[0] += 5
-    
-    # 화면 밖으로 나가지 않도록 위치 제한
-    rocket_pos[0] = max(0, min(WIDTH, rocket_pos[0]))
-    rocket_pos[1] = max(0, min(HEIGHT, rocket_pos[1]))
+# 파이어볼 생성 함수
+def create_fireballs():
+    fireball_count = 4 + (level - 4) // 3
+    fireballs.clear()
+    for _ in range(fireball_count):
+        x = random.randint(0, WIDTH)
+        y = 0
+        direction_x = rocket_pos[0] - x
+        direction_y = rocket_pos[1] - y
+        distance = math.hypot(direction_x, direction_y)
+        speed = 8
+        velocity_x = (direction_x / distance) * speed
+        velocity_y = (direction_y / distance) * speed
+        fireballs.append({"rect": pygame.Rect(x, y, 20, 20), "velocity": (velocity_x, velocity_y)})
 
 # 픽셀 충돌 체크 함수
 def check_pixel_collision(obstacle):
     rotated_rocket_rect = rocket_image.get_rect(center=(rocket_pos[0], rocket_pos[1]))
     obstacle_rect = rock_image.get_rect(center=(obstacle.x, obstacle.y))
-
-    # 충돌 체크를 위한 mask 생성
     rocket_mask = pygame.mask.from_surface(rocket_image)
     obstacle_mask = pygame.mask.from_surface(rock_image)
-
-    # 두 개의 rect 중심에서 offset 계산
     offset = (obstacle_rect.x - rotated_rocket_rect.x, obstacle_rect.y - rotated_rocket_rect.y)
     collision_point = rocket_mask.overlap(obstacle_mask, offset)
+    return collision_point is not None
 
-    return collision_point is not None  # 충돌 여부 반환
+# 충돌 체크 함수
+def check_collisions():
+    global score, lives, game_over
+    for dust in dusts[:]:
+        if math.hypot(rocket_pos[0] - dust.x, rocket_pos[1] - dust.y) < 25:
+            score += 10
+            dusts.remove(dust)
+            dusts.append(create_dust())
+
+    for i, obstacle in enumerate(obstacles):
+        if check_pixel_collision(obstacle):
+            lives -= 1
+            obstacles.remove(obstacle)
+            obstacles.append(create_obstacle())
+            obstacle_angles.pop(i)
+            obstacle_speeds.pop(i)
+            obstacle_angles.append(0)
+            obstacle_speeds.append(random.randint(1, 10))
+            if lives <= 0:
+                game_over = True
+            return False
+    return True
 
 # 블랙홀 흡입 함수
 def check_blackhole_collision():
@@ -147,40 +156,53 @@ def check_blackhole_collision():
             rocket_pos[0] += math.cos(angle) * 3
             rocket_pos[1] += math.sin(angle) * 3
             rocket_angle += 10
-
             if distance < 20:
                 game_over = True
 
-# 충돌 체크 함수
-def check_collisions():
-    global score, lives, game_over
-    for dust in dusts[:]:
-        if math.hypot(rocket_pos[0] - dust.x, rocket_pos[1] - dust.y) < 25:
-            score += 10
-            dusts.remove(dust)
-            dusts.append(create_dust())
+# 초기 먼지 및 장애물 생성
+for _ in range(10):
+    dusts.append(create_dust())
+for _ in range(5):
+    obstacles.append(create_obstacle())
+for _ in range(2):
+    blackholes.append(create_blackhole())
 
-    for i, obstacle in enumerate(obstacles):
-        if check_pixel_collision(obstacle):  # 픽셀 충돌 검사
-            lives -= 1  # 충돌 시 목숨 감소
-            obstacles.remove(obstacle)  # 충돌한 장애물 제거
-            obstacles.append(create_obstacle())  # 새로운 장애물 생성
-            obstacle_angles.pop(i)  # 회전 각도 초기화
-            obstacle_speeds.pop(i)  # 제거된 운석의 회전 속도도 삭제
-            obstacle_angles.append(0)  # 새로운 장애물의 초기 각도 추가
-            obstacle_speeds.append(random.randint(1, 10))  # 새로운 장애물의 회전 속도 추가
+# 로켓 이동 함수
+def move_rocket(keys):
+    global rocket_image, rocket_angle
+    if keys[pygame.K_a]: rocket_angle = 45
+    elif keys[pygame.K_d]: rocket_angle = -45
+    else: rocket_angle = 0
+    rocket_image = pygame.transform.rotate(original_rocket_image, rocket_angle)
+    if keys[pygame.K_w]: rocket_pos[1] -= 5
+    if keys[pygame.K_s]: rocket_pos[1] += 5
+    if keys[pygame.K_a]: rocket_pos[0] -= 5
+    if keys[pygame.K_d]: rocket_pos[0] += 5
+    rocket_pos[0] = max(0, min(WIDTH, rocket_pos[0]))
+    rocket_pos[1] = max(0, min(HEIGHT, rocket_pos[1]))
+
+# 파이어볼 이동 및 반사 처리 함수
+def move_fireballs():
+    global lives
+    for fireball in fireballs[:]:
+        fireball["rect"].x += fireball["velocity"][0]
+        fireball["rect"].y += fireball["velocity"][1]
+        if fireball["rect"].x <= 0 or fireball["rect"].x >= WIDTH - fireball["rect"].width:
+            fireball["velocity"] = (-fireball["velocity"][0], fireball["velocity"][1])
+        if fireball["rect"].y >= HEIGHT:
+            fireballs.remove(fireball)
+            continue
+        if math.hypot(rocket_pos[0] - fireball["rect"].centerx, rocket_pos[1] - fireball["rect"].centery) < 25:
+            lives -= 1
+            fireballs.remove(fireball)
             if lives <= 0:
                 game_over = True
-            return False
-    return True
 
 # 메인 게임 루프
 running = True
 game_over = False
 while running:
-    # 배경 이미지 그리기
     screen.blit(background_image, (0, 0))
-
     current_time = pygame.time.get_ticks()
 
     for event in pygame.event.get():
@@ -189,44 +211,47 @@ while running:
         if game_over and event.type == pygame.MOUSEBUTTONDOWN:
             mouse_pos = event.pos
             if retry_button.collidepoint(mouse_pos):
-                # 게임 리셋
                 score = 0
                 level = 1
-                lives = 3  # 목숨 초기화
+                lives = 3
                 scroll_speed = 2
                 blackholes = [create_blackhole() for _ in range(2)]
                 obstacles = [create_obstacle() for _ in range(5)]
                 dusts = [create_dust() for _ in range(10)]
                 rocket_pos = [WIDTH // 2, HEIGHT // 2]
-                obstacle_angles = [0] * len(obstacles)  # 각도 초기화
-                obstacle_speeds = [random.randint(1, 10) for _ in range(len(obstacles))]  # 각 운석의 회전 속도 재설정
-                extra_lives.clear()  # 목숨 아이템 초기화
+                obstacle_angles = [0] * len(obstacles)
+                obstacle_speeds = [random.randint(1, 10) for _ in range(len(obstacles))]
+                extra_lives.clear()
+                fireballs.clear()
                 game_over = False
 
     if not game_over:
-        # 점수에 따라 레벨 업
         if score >= level * level_up_score_threshold:
             level += 1
-            scroll_speed = min(scroll_speed + 1, max_scroll_speed)  # 속도 증가
-            obstacles.append(create_obstacle())  # 장애물 추가
-            obstacle_angles.append(0)  # 새 장애물의 초기 각도 추가
-            obstacle_speeds.append(random.randint(1, 10))  # 새 장애물의 회전 속도 추가
+            scroll_speed = min(scroll_speed + 1, max_scroll_speed)
+            obstacles.append(create_obstacle())
+            obstacle_angles.append(0)
+            obstacle_speeds.append(random.randint(1, 10))
             if level % 2 == 0:
-                blackholes.append(create_blackhole())  # 블랙홀 추가
-            
-            # 목숨 아이템 추가
+                blackholes.append(create_blackhole())
             extra_lives.append(create_extra_life())
-
+        if level >= 4 and current_time - last_fireball_time > fireball_spawn_interval:
+            create_fireballs()
+            last_fireball_time = current_time
         keys = pygame.key.get_pressed()
         move_rocket(keys)
         check_collisions()
         check_blackhole_collision()
+        move_fireballs()
+        for fireball in fireballs:
+            screen.blit(fireball_image, fireball["rect"].topleft)
 
         for dust in dusts:
             dust.y += scroll_speed
             if dust.y > HEIGHT:
                 dusts.remove(dust)
                 dusts.append(create_dust())
+            screen.blit(dust_image, dust.topleft)
 
         for i, obstacle in enumerate(obstacles):
             obstacle.y += scroll_speed
@@ -236,19 +261,16 @@ while running:
                 obstacle_angles.pop(i)
                 obstacle_speeds.pop(i)
                 obstacle_angles.append(0)
-                obstacle_speeds.append(random.randint(1, 10))  # 새로운 장애물의 회전 속도 추가
-
-            # 운석 회전 각도를 각기 다른 속도로 증가시키고 회전된 이미지 생성
-            obstacle_angles[i] = (obstacle_angles[i] + obstacle_speeds[i]) % 360  # 개별 속도만큼 회전
+                obstacle_speeds.append(random.randint(1, 10))
+            obstacle_angles[i] = (obstacle_angles[i] + obstacle_speeds[i]) % 360
             rotated_rock_image = pygame.transform.rotate(rock_image, obstacle_angles[i])
             rotated_rect = rotated_rock_image.get_rect(center=(obstacle.x + 20, obstacle.y + 20))
             screen.blit(rotated_rock_image, rotated_rect.topleft)
 
-        # 목숨 아이템 표시 및 충돌 처리
         for life in extra_lives[:]:
             if math.hypot(rocket_pos[0] - life.centerx, rocket_pos[1] - life.centery) < 25:
-                lives = min(lives + 1, max_lives)  # 목숨 증가, 최대 5로 제한
-                extra_lives.remove(life)  # 획득한 목숨 아이템 제거
+                lives = min(lives + 1, max_lives)
+                extra_lives.remove(life)
 
         for life in extra_lives:
             life.y += scroll_speed
@@ -256,9 +278,6 @@ while running:
                 extra_lives.remove(life)
             else:
                 screen.blit(heart_image, life)
-
-        for dust in dusts:
-            screen.blit(dust_image, dust.topleft)
 
         for blackhole in blackholes:
             blackhole.y += scroll_speed - 1
@@ -276,7 +295,7 @@ while running:
         screen.blit(level_text, (10, 50))
 
         for i in range(lives):
-            screen.blit(heart_image, (WIDTH - (i + 1) * 40, 10))  # 오른쪽 상단에 하트 이미지를 배치
+            screen.blit(heart_image, (WIDTH - (i + 1) * 40, 10))
 
     else:
         screen.fill(BLACK)
