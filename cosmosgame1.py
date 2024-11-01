@@ -29,6 +29,10 @@ max_lives = 5
 level = 1
 level_up_score_threshold = 100
 
+# 배경 이미지 로드 및 크기 설정
+background_image = pygame.image.load("background1.png")
+background_image = pygame.transform.scale(background_image, (WIDTH, HEIGHT))
+
 # 로켓 설정
 rocket_image = pygame.image.load("rocket.png")
 rocket_image = pygame.transform.scale(rocket_image, (50, 50))
@@ -59,7 +63,7 @@ blackhole_image = pygame.image.load("black.png")
 blackhole_image = pygame.transform.scale(blackhole_image, (80, 80))
 
 # 파이어볼 이미지 로드
-fireball_image = pygame.image.load("fire.png")  # 파이어볼 이미지 필요
+fireball_image = pygame.image.load("fire.png")
 fireball_image = pygame.transform.scale(fireball_image, (20, 20))
 
 # 파이어볼 리스트
@@ -71,6 +75,32 @@ last_fireball_time = 0
 obstacle_angles = [0] * 5
 obstacle_speeds = [random.randint(1, 10) for _ in range(5)]
 
+# 상태 변수
+paused = False
+game_started = False
+game_over = False
+
+# 초기 화면 표시 함수
+def show_start_screen():
+    screen.fill(BLACK)
+    title_text = font.render("Game", True, WHITE)
+    screen.blit(title_text, (WIDTH // 2 - title_text.get_width() // 2, HEIGHT // 2 - 100))
+    
+    # Start 버튼
+    start_button = pygame.Rect(WIDTH // 2 - 50, HEIGHT // 2, 100, 40)
+    pygame.draw.rect(screen, BLUE, start_button)
+    start_text = font.render("Start", True, WHITE)
+    screen.blit(start_text, (start_button.x + 20, start_button.y + 5))
+
+    # Exit 버튼
+    exit_button = pygame.Rect(WIDTH // 2 - 50, HEIGHT // 2 + 60, 100, 40)
+    pygame.draw.rect(screen, BLUE, exit_button)
+    exit_text = font.render("Exit", True, WHITE)
+    screen.blit(exit_text, (exit_button.x + 25, exit_button.y + 5))
+
+    pygame.display.flip()
+    return start_button, exit_button
+    
 # 먼지 및 장애물 생성 함수
 def create_dust():
     x = random.randint(0, WIDTH)
@@ -92,21 +122,22 @@ def create_extra_life():
     y = random.randint(-HEIGHT, 0)
     return pygame.Rect(x, y, 30, 30)
 
-# 파이어볼 생성 함수 (속도와 갯수를 레벨에 따라 설정)
+# 파이어볼 생성 함수
 def create_fireballs():
-    fireball_count = 4 + (level - 4) // 3  # 4단계부터 4개, 이후 3단계마다 1개씩 증가
-    fireballs.clear()  # 기존 파이어볼 제거 후 새로 생성
+    fireball_count = 4 + (level - 4) // 3
+    fireballs.clear()
     for _ in range(fireball_count):
-        x = random.randint(0, WIDTH)  # 항상 상단에서 생성
+        x = random.randint(0, WIDTH)
         y = 0
         direction_x = rocket_pos[0] - x
         direction_y = rocket_pos[1] - y
         distance = math.hypot(direction_x, direction_y)
-        speed = 8  # 파이어볼 속도를 기존보다 빠르게 설정
+        speed = 8
         velocity_x = (direction_x / distance) * speed
         velocity_y = (direction_y / distance) * speed
         fireballs.append({"rect": pygame.Rect(x, y, 20, 20), "velocity": (velocity_x, velocity_y)})
-# 픽셀 충돌 체크 함수 (장애물과 로켓의 픽셀 단위 충돌)
+
+# 픽셀 충돌 체크 함수
 def check_pixel_collision(obstacle):
     rotated_rocket_rect = rocket_image.get_rect(center=(rocket_pos[0], rocket_pos[1]))
     obstacle_rect = rock_image.get_rect(center=(obstacle.x, obstacle.y))
@@ -115,7 +146,7 @@ def check_pixel_collision(obstacle):
     offset = (obstacle_rect.x - rotated_rocket_rect.x, obstacle_rect.y - rotated_rocket_rect.y)
     collision_point = rocket_mask.overlap(obstacle_mask, offset)
     return collision_point is not None
-    
+
 # 충돌 체크 함수
 def check_collisions():
     global score, lives, game_over
@@ -126,14 +157,14 @@ def check_collisions():
             dusts.append(create_dust())
 
     for i, obstacle in enumerate(obstacles):
-        if check_pixel_collision(obstacle):  # 픽셀 충돌 검사
-            lives -= 1  # 충돌 시 목숨 감소
-            obstacles.remove(obstacle)  # 충돌한 장애물 제거
-            obstacles.append(create_obstacle())  # 새로운 장애물 생성
-            obstacle_angles.pop(i)  # 회전 각도 초기화
-            obstacle_speeds.pop(i)  # 제거된 운석의 회전 속도도 삭제
-            obstacle_angles.append(0)  # 새로운 장애물의 초기 각도 추가
-            obstacle_speeds.append(random.randint(1, 10))  # 새로운 장애물의 회전 속도 추가
+        if check_pixel_collision(obstacle):
+            lives -= 1
+            obstacles.remove(obstacle)
+            obstacles.append(create_obstacle())
+            obstacle_angles.pop(i)
+            obstacle_speeds.pop(i)
+            obstacle_angles.append(0)
+            obstacle_speeds.append(random.randint(1, 10))
             if lives <= 0:
                 game_over = True
             return False
@@ -151,7 +182,6 @@ def check_blackhole_collision():
             rocket_pos[0] += math.cos(angle) * 3
             rocket_pos[1] += math.sin(angle) * 3
             rocket_angle += 10
-
             if distance < 20:
                 game_over = True
 
@@ -166,21 +196,14 @@ for _ in range(2):
 # 로켓 이동 함수
 def move_rocket(keys):
     global rocket_image, rocket_angle
-
-    if keys[pygame.K_a]:
-        rocket_angle = 45
-    elif keys[pygame.K_d]:
-        rocket_angle = -45
-    else:
-        rocket_angle = 0
-
+    if keys[pygame.K_a]: rocket_angle = 45
+    elif keys[pygame.K_d]: rocket_angle = -45
+    else: rocket_angle = 0
     rocket_image = pygame.transform.rotate(original_rocket_image, rocket_angle)
-
     if keys[pygame.K_w]: rocket_pos[1] -= 5
     if keys[pygame.K_s]: rocket_pos[1] += 5
     if keys[pygame.K_a]: rocket_pos[0] -= 5
     if keys[pygame.K_d]: rocket_pos[0] += 5
-
     rocket_pos[0] = max(0, min(WIDTH, rocket_pos[0]))
     rocket_pos[1] = max(0, min(HEIGHT, rocket_pos[1]))
 
@@ -190,30 +213,69 @@ def move_fireballs():
     for fireball in fireballs[:]:
         fireball["rect"].x += fireball["velocity"][0]
         fireball["rect"].y += fireball["velocity"][1]
-
         if fireball["rect"].x <= 0 or fireball["rect"].x >= WIDTH - fireball["rect"].width:
             fireball["velocity"] = (-fireball["velocity"][0], fireball["velocity"][1])
-        
         if fireball["rect"].y >= HEIGHT:
             fireballs.remove(fireball)
             continue
-
         if math.hypot(rocket_pos[0] - fireball["rect"].centerx, rocket_pos[1] - fireball["rect"].centery) < 25:
             lives -= 1
             fireballs.remove(fireball)
             if lives <= 0:
                 game_over = True
 
+# 일시 정지 화면 표시 함수
+def show_pause_menu():
+    screen.fill(BLACK)
+    pause_text = font.render("Game Paused", True, WHITE)
+    screen.blit(pause_text, (WIDTH // 2 - pause_text.get_width() // 2, HEIGHT // 2 - 60))
+    
+    # Continue 버튼
+    continue_button = pygame.Rect(WIDTH // 2 - 70, HEIGHT // 2, 150, 40)
+    pygame.draw.rect(screen, BLUE, continue_button)
+    continue_text = font.render("Continue", True, WHITE)
+    screen.blit(continue_text, (continue_button.x + 10, continue_button.y + 5))
+
+    # Exit 버튼
+    exit_button = pygame.Rect(WIDTH // 2 - 70, HEIGHT // 2 + 60, 150, 40)
+    pygame.draw.rect(screen, BLUE, exit_button)
+    exit_text = font.render("Exit", True, WHITE)
+    screen.blit(exit_text, (exit_button.x + 25, exit_button.y + 5))
+
+    pygame.display.flip()
+    return continue_button, exit_button
+
 # 메인 게임 루프
 running = True
 game_over = False
 while running:
-    screen.fill(BLACK)
+    if not game_started:
+        # 초기 화면
+        start_button, exit_button = show_start_screen()
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                running = False
+            if event.type == pygame.MOUSEBUTTONDOWN:
+                mouse_pos = event.pos
+                if start_button.collidepoint(mouse_pos):
+                    game_started = True  # 게임 시작
+                    reset_game()         # 게임 초기화
+                elif exit_button.collidepoint(mouse_pos):
+                    running = False      # 게임 종료
+        continue  # 초기 화면이 사라질 때까지 루프 지속
+
+    # 메인 게임 화면
+    screen.blit(background_image, (0, 0))
     current_time = pygame.time.get_ticks()
 
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
             running = False
+        # 일시 정지 상태 토글 (P키로 일시 정지)
+        if event.type == pygame.KEYDOWN and event.key == pygame.K_p:
+            paused = not paused
+
+        # 게임 종료 상태에서 리트라이 처리
         if game_over and event.type == pygame.MOUSEBUTTONDOWN:
             mouse_pos = event.pos
             if retry_button.collidepoint(mouse_pos):
@@ -231,6 +293,18 @@ while running:
                 fireballs.clear()
                 game_over = False
 
+    # 일시 정지 상태 처리
+    if paused:
+        continue_button, exit_button = show_pause_menu()
+        for event in pygame.event.get():
+            if event.type == pygame.MOUSEBUTTONDOWN:
+                mouse_pos = event.pos
+                if continue_button.collidepoint(mouse_pos):
+                    paused = False  # 게임 계속
+                elif exit_button.collidepoint(mouse_pos):
+                    running = False  # 게임 종료
+        continue
+
     if not game_over:
         if score >= level * level_up_score_threshold:
             level += 1
@@ -241,8 +315,6 @@ while running:
             if level % 2 == 0:
                 blackholes.append(create_blackhole())
             extra_lives.append(create_extra_life())
-
-        # 파이어볼 생성 조건 (4단계 이상일 때)
         if level >= 4 and current_time - last_fireball_time > fireball_spawn_interval:
             create_fireballs()
             last_fireball_time = current_time
@@ -252,12 +324,11 @@ while running:
         check_collisions()
         check_blackhole_collision()
         move_fireballs()
-
+        
+        # 화면 그리기
         for fireball in fireballs:
             screen.blit(fireball_image, fireball["rect"].topleft)
 
-        # 먼지, 장애물, 블랙홀 등 화면 표시 및 업데이트 코드
-        # (위에서 설명한 코드들을 여기에 추가)
         for dust in dusts:
             dust.y += scroll_speed
             if dust.y > HEIGHT:
@@ -265,7 +336,6 @@ while running:
                 dusts.append(create_dust())
             screen.blit(dust_image, dust.topleft)
 
-        # 장애물 이동 및 회전 처리 및 화면 표시
         for i, obstacle in enumerate(obstacles):
             obstacle.y += scroll_speed
             if obstacle.y > HEIGHT:
@@ -275,14 +345,11 @@ while running:
                 obstacle_speeds.pop(i)
                 obstacle_angles.append(0)
                 obstacle_speeds.append(random.randint(1, 10))
-
-            # 운석 회전 각도 증가 및 회전된 이미지 생성
             obstacle_angles[i] = (obstacle_angles[i] + obstacle_speeds[i]) % 360
             rotated_rock_image = pygame.transform.rotate(rock_image, obstacle_angles[i])
             rotated_rect = rotated_rock_image.get_rect(center=(obstacle.x + 20, obstacle.y + 20))
             screen.blit(rotated_rock_image, rotated_rect.topleft)
 
-        # 추가 목숨 아이템 표시 및 충돌 처리
         for life in extra_lives[:]:
             if math.hypot(rocket_pos[0] - life.centerx, rocket_pos[1] - life.centery) < 25:
                 lives = min(lives + 1, max_lives)
@@ -295,7 +362,6 @@ while running:
             else:
                 screen.blit(heart_image, life)
 
-        # 블랙홀 이동 및 화면 표시
         for blackhole in blackholes:
             blackhole.y += scroll_speed - 1
             if blackhole.y > HEIGHT:
@@ -303,17 +369,14 @@ while running:
                 blackholes.append(create_blackhole())
             screen.blit(blackhole_image, blackhole)
 
-        # 로켓 회전 및 위치 업데이트 후 화면 표시
         rotated_rocket_rect = rocket_image.get_rect(center=(rocket_pos[0], rocket_pos[1]))
         screen.blit(rocket_image, rotated_rocket_rect.topleft)
 
-        # 점수 및 레벨 텍스트 표시
         score_text = font.render(f"Score: {score}", True, WHITE)
         level_text = font.render(f"Level: {level}", True, WHITE)
         screen.blit(score_text, (10, 10))
         screen.blit(level_text, (10, 50))
 
-        # 목숨 이미지 표시
         for i in range(lives):
             screen.blit(heart_image, (WIDTH - (i + 1) * 40, 10))
 
