@@ -41,6 +41,13 @@ level_up_score_threshold = 100
 background_image = pygame.image.load("background1.png")
 background_image = pygame.transform.scale(background_image, (WIDTH, HEIGHT))
 
+# 무적 상태 변수
+invincible = False
+invincible_start_time = 0
+
+# 무적 상태 지속 시간 (2초)
+INVINCIBLE_DURATION = 2000  # milliseconds
+
 # 로켓 설정
 rocket_image = pygame.image.load("rocket.png")
 rocket_image = pygame.transform.scale(rocket_image, (50, 50))
@@ -164,27 +171,49 @@ def check_pixel_collision(obstacle):
     collision_point = rocket_mask.overlap(obstacle_mask, offset)
     return collision_point is not None
 
+# 함수 예시: 무적 상태 관리 함수
+def handle_invincibility():
+    global invincible, invincible_start_time
+    # 무적 상태가 켜진 경우
+    if invincible:
+        invincible_text = font.render("Invincible!", True, YELLOW)
+        screen.blit(invincible_text, (rocket_pos[0] - invincible_text.get_width() // 2, rocket_pos[1] - 40))
+        if pygame.time.get_ticks() - invincible_start_time > INVINCIBLE_DURATION:
+            invincible = False  # 무적 해제
+
+# 로켓 렌더링 함수 - 색상 변경 효과 포함
+def render_rocket():
+    if invincible:
+        pygame.draw.circle(screen, YELLOW, (rocket_pos[0], rocket_pos[1]), 30, 3)
+
 # 충돌 체크 함수
 def check_collisions():
-    global score, lives, game_over
+    global score, lives, game_over, invincible, invincible_start_time
     for dust in dusts[:]:
         if math.hypot(rocket_pos[0] - dust.x, rocket_pos[1] - dust.y) < 25:
             score += 10
             dusts.remove(dust)
             dusts.append(create_dust())
 
-    for i, obstacle in enumerate(obstacles):
-        if check_pixel_collision(obstacle):
-            lives -= 1
-            obstacles.remove(obstacle)
-            obstacles.append(create_obstacle())
-            obstacle_angles.pop(i)
-            obstacle_speeds.pop(i)
-            obstacle_angles.append(0)
-            obstacle_speeds.append(random.randint(1, 10))
-            if lives <= 0:
-                game_over = True
-            return False
+    # 무적 상태가 아닐 때만 충돌 검사
+    if not invincible:
+        for i, obstacle in enumerate(obstacles):
+            if check_pixel_collision(obstacle):
+                lives -= 1
+                obstacles.remove(obstacle)
+                obstacles.append(create_obstacle())
+                obstacle_angles.pop(i)
+                obstacle_speeds.pop(i)
+                obstacle_angles.append(0)
+                obstacle_speeds.append(random.randint(1, 10))
+                render_rocket()
+                # 무적 상태 시작
+                invincible = True
+                invincible_start_time = pygame.time.get_ticks()
+
+                if lives <= 0:
+                    game_over = True
+                return False
     return True
 
 # 블랙홀 흡입 함수
@@ -258,6 +287,7 @@ def move_fireballs():
             fireballs.remove(fireball)
             if lives <= 0:
                 game_over = True
+
 
 # 일시 정지 화면 표시 함수
 def show_pause_menu():
@@ -372,11 +402,13 @@ while running:
             create_fireballs()
             last_fireball_time = current_time
 
+        handle_invincibility()
         keys = pygame.key.get_pressed()
         move_rocket(keys)
         check_collisions()
         check_blackhole_collision()
         move_fireballs()
+        render_rocket()
         
         # 화면 그리기
         for fireball in fireballs:
