@@ -30,7 +30,7 @@ level = 1
 level_up_score_threshold = 100  # 각 레벨에서 필요한 점수
 
 # 배경 이미지 로드 및 크기 설정
-background_image = pygame.image.load("background.png")
+background_image = pygame.image.load("background1.png")
 background_image = pygame.transform.scale(background_image, (WIDTH, HEIGHT))
 
 # 로켓 설정
