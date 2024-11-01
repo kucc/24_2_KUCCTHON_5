@@ -368,20 +368,24 @@ def move_rocket(keys):
     rocket_image = pygame.transform.rotate(original_rocket_image, rocket_angle)
     if keys[pygame.K_w]:
         rocket_pos[1] -= 5
-        # *** Added: 로켓 위쪽에서 연기 생성 ***
-        create_particle((rocket_pos[0], rocket_pos[1] + 25), (random.uniform(-1, 1), 2), 3, GRAY, 500)
+        # *** Modified: 회색 파티클 제거하고 하얀색 및 노란색 파티클 생성 ***
+        create_particle((rocket_pos[0], rocket_pos[1] + 25), (random.uniform(-1, 1), 2), 3, WHITE, 500)
+        create_particle((rocket_pos[0], rocket_pos[1] + 25), (random.uniform(-1, 1), 2), 3, YELLOW, 500)
     if keys[pygame.K_s]:
         rocket_pos[1] += 5
-        # *** Added: 로켓 아래쪽에서 연기 생성 ***
-        create_particle((rocket_pos[0], rocket_pos[1] - 25), (random.uniform(-1, 1), -2), 3, GRAY, 500)
+        # *** Modified: 회색 파티클 제거하고 하얀색 및 노란색 파티클 생성 ***
+        create_particle((rocket_pos[0], rocket_pos[1] - 25), (random.uniform(-1, 1), -2), 3, WHITE, 500)
+        create_particle((rocket_pos[0], rocket_pos[1] - 25), (random.uniform(-1, 1), -2), 3, YELLOW, 500)
     if keys[pygame.K_a]:
         rocket_pos[0] -= 5
-        # *** Added: 로켓 왼쪽에서 연기 생성 ***
-        create_particle((rocket_pos[0] + 25, rocket_pos[1]), (2, random.uniform(-1, 1)), 3, GRAY, 500)
+        # *** Modified: 회색 파티클 제거하고 하얀색 및 노란색 파티클 생성 ***
+        create_particle((rocket_pos[0] + 25, rocket_pos[1]), (2, random.uniform(-1, 1)), 3, WHITE, 500)
+        create_particle((rocket_pos[0] + 25, rocket_pos[1]), (2, random.uniform(-1, 1)), 3, YELLOW, 500)
     if keys[pygame.K_d]:
         rocket_pos[0] += 5
-        # *** Added: 로켓 오른쪽에서 연기 생성 ***
-        create_particle((rocket_pos[0] - 25, rocket_pos[1]), (-2, random.uniform(-1, 1)), 3, GRAY, 500)
+        # *** Modified: 회색 파티클 제거하고 하얀색 및 노란색 파티클 생성 ***
+        create_particle((rocket_pos[0] - 25, rocket_pos[1]), (-2, random.uniform(-1, 1)), 3, WHITE, 500)
+        create_particle((rocket_pos[0] - 25, rocket_pos[1]), (-2, random.uniform(-1, 1)), 3, YELLOW, 500)
     rocket_pos[0] = max(0, min(WIDTH, rocket_pos[0]))
     rocket_pos[1] = max(0, min(HEIGHT, rocket_pos[1]))
 
