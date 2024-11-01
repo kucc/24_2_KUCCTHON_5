@@ -35,6 +35,10 @@ rocket_pos = [WIDTH // 2, HEIGHT // 2]  # 화면 중앙에서 시작
 rocket_angle = 0  # 로켓의 회전 각도
 original_rocket_image = rocket_image  # 원래의 로켓 이미지 보관
 
+# 하트 이미지 로드 및 크기 설정
+heart_image = pygame.image.load("heart.png")
+heart_image = pygame.transform.scale(heart_image, (30, 30))  # 하트 이미지 크기를 30x30으로 조정
+
 # 장애물 및 먼지 리스트
 dusts = []
 obstacles = []
@@ -207,13 +211,15 @@ while running:
         rotated_rocket_rect = rocket_image.get_rect(center=(rocket_pos[0], rocket_pos[1]))
         screen.blit(rocket_image, rotated_rocket_rect.topleft)
 
-        # 점수, 레벨 및 목숨 표시
+        # 점수 및 레벨 표시
         score_text = font.render(f"Score: {score}", True, WHITE)
         level_text = font.render(f"Level: {level}", True, WHITE)
-        lives_text = font.render(f"Lives: {lives}", True, WHITE)
         screen.blit(score_text, (10, 10))
         screen.blit(level_text, (10, 50))
-        screen.blit(lives_text, (10, 90))
+
+        # 남은 목숨에 따라 하트 이미지 표시
+        for i in range(lives):
+            screen.blit(heart_image, (WIDTH - (i + 1) * 40, 10))  # 오른쪽 상단에 하트 이미지를 배치
 
     else:
         # 게임 오버 화면
