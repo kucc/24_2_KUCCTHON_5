@@ -41,6 +41,10 @@ level_up_score_threshold = 100
 background_image = pygame.image.load("background1.png")
 background_image = pygame.transform.scale(background_image, (WIDTH, HEIGHT))
 
+# 배경 이미지2 로드
+background_image_2= pygame.image.load("background2.png")
+background_image_2 = pygame.transform.scale(background_image_2, (WIDTH, HEIGHT))
+
 # 무적 상태 변수
 invincible = False
 invincible_start_time = 0
@@ -97,7 +101,6 @@ game_over = False
 
 # 초기 화면 표시 함수
 def show_start_screen():
-    screen.fill(BLACK)
     title_text = font.render("Cosmos Game", True, WHITE)
     screen.blit(title_text, (WIDTH // 2 - title_text.get_width() // 2, HEIGHT // 2 - 100))
     
@@ -329,6 +332,7 @@ while running:
     if not game_started:
         # 초기 화면
         start_button, exit_button = show_start_screen()
+        screen.blit(background_image_2, (0, 0))
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 running = False
