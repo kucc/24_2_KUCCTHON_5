@@ -23,6 +23,10 @@ GRAY = (128, 128, 128)  # *** Added: GRAY 색상 추가 ***
 # 폰트 설정
 font = pygame.font.Font("game_font_1.ttf", 28)
 
+# 아이콘 설정
+icon_image = pygame.image.load("icon.png")  # 아이콘 이미지 파일 로드
+pygame.display.set_icon(icon_image)  # 프로그램 아이콘 설정
+
 # 게임 변수
 clock = pygame.time.Clock()
 score = 0
