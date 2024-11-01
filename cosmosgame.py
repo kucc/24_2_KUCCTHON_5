@@ -75,9 +75,32 @@ last_fireball_time = 0
 obstacle_angles = [0] * 5
 obstacle_speeds = [random.randint(1, 10) for _ in range(5)]
 
-# 일시 정지 상태 변수
+# 상태 변수
 paused = False
+game_started = False
+game_over = False
 
+# 초기 화면 표시 함수
+def show_start_screen():
+    screen.fill(BLACK)
+    title_text = font.render("Game", True, WHITE)
+    screen.blit(title_text, (WIDTH // 2 - title_text.get_width() // 2, HEIGHT // 2 - 100))
+    
+    # Start 버튼
+    start_button = pygame.Rect(WIDTH // 2 - 50, HEIGHT // 2, 100, 40)
+    pygame.draw.rect(screen, BLUE, start_button)
+    start_text = font.render("Start", True, WHITE)
+    screen.blit(start_text, (start_button.x + 20, start_button.y + 5))
+
+    # Exit 버튼
+    exit_button = pygame.Rect(WIDTH // 2 - 50, HEIGHT // 2 + 60, 100, 40)
+    pygame.draw.rect(screen, BLUE, exit_button)
+    exit_text = font.render("Exit", True, WHITE)
+    screen.blit(exit_text, (exit_button.x + 25, exit_button.y + 5))
+
+    pygame.display.flip()
+    return start_button, exit_button
+    
 # 먼지 및 장애물 생성 함수
 def create_dust():
     x = random.randint(0, WIDTH)
@@ -226,6 +249,21 @@ def show_pause_menu():
 running = True
 game_over = False
 while running:
+    if not game_started:
+        # 초기 화면
+        start_button, exit_button = show_start_screen()
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                running = False
+            if event.type == pygame.MOUSEBUTTONDOWN:
+                mouse_pos = event.pos
+                if start_button.collidepoint(mouse_pos):
+                    game_started = True  # 게임 시작
+                elif exit_button.collidepoint(mouse_pos):
+                    running = False      # 게임 종료
+        continue  # 초기 화면이 사라질 때까지 루프 지속
+
+    # 메인 게임 화면
     screen.blit(background_image, (0, 0))
     current_time = pygame.time.get_ticks()
 
