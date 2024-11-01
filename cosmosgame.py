@@ -39,6 +39,10 @@ original_rocket_image = rocket_image  # 원래의 로켓 이미지 보관
 heart_image = pygame.image.load("heart.png")
 heart_image = pygame.transform.scale(heart_image, (30, 30))  # 하트 이미지 크기를 30x30으로 조정
 
+# 먼지 이미지 로드 및 크기 설정
+dust_image = pygame.image.load("star.png")
+dust_image = pygame.transform.scale(dust_image, (15, 15))  # 먼지 이미지를 15x15 크기로 조정
+
 # 장애물 및 먼지 리스트
 dusts = []
 obstacles = []
@@ -60,7 +64,7 @@ obstacle_speeds = [random.randint(1, 10) for _ in range(5)]  # 각 운석의 회
 def create_dust():
     x = random.randint(0, WIDTH)
     y = random.randint(-HEIGHT, 0)
-    return pygame.Rect(x, y, 8, 8)
+    return pygame.Rect(x, y, 15, 15)  # 먼지의 크기를 이미지 크기인 15x15로 조정
 
 def create_obstacle():
     x = random.randint(0, WIDTH)
@@ -218,7 +222,7 @@ while running:
             screen.blit(rotated_rock_image, rotated_rect.topleft)
 
         for dust in dusts:
-            pygame.draw.rect(screen, WHITE, dust)
+            screen.blit(dust_image, dust.topleft)  # 먼지 이미지를 화면에 표시
 
         for blackhole in blackholes:
             blackhole.y += scroll_speed - 1
