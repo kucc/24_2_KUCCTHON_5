@@ -294,7 +294,6 @@ def move_fireballs():
 
 # 일시 정지 화면 표시 함수
 def show_pause_menu():
-    screen.fill(BLACK)
     pause_text = font.render("Game Paused", True, WHITE)
     screen.blit(pause_text, (WIDTH // 2 - pause_text.get_width() // 2, HEIGHT // 2 - 100))
 
