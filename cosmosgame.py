@@ -505,8 +505,9 @@ while running:
                     reset_game()  # 게임 재시작
                     game_over = False
                 elif menu_button.collidepoint(mouse_pos):
+                    reset_game()
                     game_started = False  # 초기 화면으로 돌아가기
-                    game_over = False
+                    paused = False
                 elif exit_button.collidepoint(mouse_pos):
                     running = False  # 게임 종료
         continue  # 게임 오버 상태에서는 루프 중단
