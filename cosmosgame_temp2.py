@@ -182,6 +182,12 @@ def create_particle(pos, vel, radius, color, lifetime):
     particles.append(Particle(pos, vel, radius, color, lifetime))
 # *** End of Added: 파티클 시스템 ***
 
+# *** Added: 보스 레이드 후 부스터 및 무적 지속 변수 ***
+post_boss_boost = False    # 보스 레이드 후 부스터 활성화 여부
+boost_start_time = 0       # 부스터 시작 시간
+BOOST_DURATION = 3000      # 부스터 지속 시간 (3초)
+BOOST_MULTIPLIER = 2.5     # 부스터 속도 배율
+
 # 초기 화면 표시 함수
 def show_start_screen():
     screen.blit(background_image_2, (0, 0))  # Ensure background is drawn first
@@ -269,7 +275,7 @@ def handle_invincibility():
     if invincible:
         invincible_text = font.render("Invincible!", True, YELLOW)
         screen.blit(invincible_text, (rocket_pos[0] - invincible_text.get_width() // 2, rocket_pos[1] - 40))
-        if pygame.time.get_ticks() - invincible_start_time > INVINCIBLE_DURATION:
+        if pygame.time.get_ticks() - invincible_start_time > INVINCIBLE_DURATION and not post_boss_boost:
             invincible = False  # 무적 해제
 
 # 로켓 렌더링 함수 - 색상 변경 효과 포함
@@ -325,7 +331,7 @@ def check_blackhole_collision():
             rocket_pos[0] += math.cos(angle) * 3
             rocket_pos[1] += math.sin(angle) * 3
             rocket_angle += 10
-            if distance < 10:
+            if distance < 10 and not post_boss_boost:
                 game_over = True
             # *** Added: 블랙홀 근처에서 파티클 생성 ***
             create_particle(blackhole.center, (random.uniform(-1, 1), random.uniform(-1, 1)), 3, PURPLE, 300)
@@ -512,6 +518,20 @@ while running:
                 # We'll handle game over in the "GAME_OVER" state
                 pass
 
+        # *** 부스터 활성화 상태일 때 스크롤 속도를 조절하고, 무적 상태 표시 ***
+        if post_boss_boost:
+            current_scroll_speed = scroll_speed * BOOST_MULTIPLIER
+            if pygame.time.get_ticks() - boost_start_time >= BOOST_DURATION:
+                post_boss_boost = False
+                current_scroll_speed = scroll_speed
+                invincible = False
+            else:
+                boost_text = font.render("BOOST MODE!", True, ORANGE)
+                screen.blit(boost_text, (WIDTH // 2 - boost_text.get_width() // 2, HEIGHT // 2 - 80))
+                invincible = True  # 부스터 동안 무적 상태 유지
+        else:
+            current_scroll_speed = scroll_speed  # 기본 스크롤 속도 적용
+
         if not game_over:
             if score >= level * level_up_score_threshold:
                 level += 1
@@ -547,14 +567,14 @@ while running:
                 screen.blit(fireball_image, fireball["rect"].topleft)
 
             for dust in dusts:
-                dust.y += scroll_speed
+                dust.y += current_scroll_speed
                 if dust.y > HEIGHT:
                     dusts.remove(dust)
                     dusts.append(create_dust())
                 screen.blit(dust_image, dust.topleft)
 
             for i, obstacle in enumerate(obstacles):
-                obstacle.y += scroll_speed
+                obstacle.y += current_scroll_speed
                 if obstacle.y > HEIGHT:
                     obstacles.remove(obstacle)
                     obstacles.append(create_obstacle())
@@ -575,14 +595,14 @@ while running:
                     create_particle(life.center, (random.uniform(-1, 1), random.uniform(-1, 1)), 5, GREEN, 500)
 
             for life in extra_lives:
-                life.y += scroll_speed
+                life.y += current_scroll_speed
                 if life.y > HEIGHT:
                     extra_lives.remove(life)
                 else:
                     screen.blit(heart_image, life)
 
             for blackhole in blackholes:
-                blackhole.y += scroll_speed - 1
+                blackhole.y += current_scroll_speed - 1
                 if blackhole.y > HEIGHT:
                     blackholes.remove(blackhole)
                     blackholes.append(create_blackhole())
@@ -647,6 +667,12 @@ while running:
                 BOSS_RAID = False
                 game_state = "MAIN_GAME"
                 last_boss_raid_score = score  # **Update the last_boss_raid_score here**
+
+                # *** 보스 레이드 후 부스터 상태 활성화 ***
+                post_boss_boost = True
+                boost_start_time = pygame.time.get_ticks()
+                invincible = True
+
                 continue  # Proceed to the main game
 
             # 로켓 이동 처리
