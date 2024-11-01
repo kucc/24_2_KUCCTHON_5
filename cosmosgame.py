@@ -124,18 +124,27 @@ def create_extra_life():
 
 # 파이어볼 생성 함수
 def create_fireballs():
-    fireball_count = 4 + (level - 4) // 3
-    fireballs.clear()
+    # 레벨에 따라 생성할 파이어볼 개수 설정
+    fireball_count = 4 + (level - 4) // 3  # 4단계부터 4개, 이후 3레벨마다 1개씩 증가
+    fireballs.clear()  # 기존 파이어볼 제거 후 새로 생성
+
     for _ in range(fireball_count):
-        x = random.randint(0, WIDTH)
-        y = 0
+        # 파이어볼이 화면 상단의 임의의 구간에서 생성되도록 설정
+        x = random.randint(0, WIDTH)  # 화면 너비 내 임의의 x 위치
+        y = random.randint(-100, 0)  # 화면 상단에서 조금 위쪽에서 생성
         direction_x = rocket_pos[0] - x
         direction_y = rocket_pos[1] - y
         distance = math.hypot(direction_x, direction_y)
-        speed = 8
+        
+        speed = 8  # 파이어볼 속도
         velocity_x = (direction_x / distance) * speed
         velocity_y = (direction_y / distance) * speed
-        fireballs.append({"rect": pygame.Rect(x, y, 20, 20), "velocity": (velocity_x, velocity_y)})
+
+        # 파이어볼 속도와 생성 위치를 fireballs 리스트에 추가
+        fireballs.append({
+            "rect": pygame.Rect(x, y, 20, 20),
+            "velocity": (velocity_x, velocity_y)
+        })
 
 # 픽셀 충돌 체크 함수
 def check_pixel_collision(obstacle):
