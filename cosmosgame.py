@@ -12,6 +12,13 @@ pygame.display.set_caption("무한 우주 먼지 수집 로켓")
 WHITE = (255, 255, 255)
 BLACK = (0, 0, 0)
 BLUE = (0, 0, 255)
+RED = (255, 0, 0)
+ORANGE = (255, 127, 0)
+YELLOW = (255, 255, 0)
+GREEN = (0, 255, 0)
+BLUE = (0, 0, 255)
+NAVY = (75, 0, 130)
+PURPLE = (143, 0, 255)
 
 # 폰트 설정
 font = pygame.font.Font("game_font_1.ttf", 28)
@@ -95,7 +102,7 @@ def show_start_screen():
 
     # Exit 버튼
     exit_button = pygame.Rect(WIDTH // 2 - 50, HEIGHT // 2 + 60, 100, 40)
-    pygame.draw.rect(screen, BLUE, exit_button)
+    pygame.draw.rect(screen, RED, exit_button)
     exit_text = font.render("Exit", True, WHITE)
     screen.blit(exit_text, (exit_button.x + 15, exit_button.y + 5))
 
@@ -266,19 +273,19 @@ def show_pause_menu():
 
     # Restart 버튼
     restart_button = pygame.Rect(WIDTH // 2 - 70, HEIGHT // 2 + 60, 150, 40)
-    pygame.draw.rect(screen, BLUE, restart_button)
+    pygame.draw.rect(screen, NAVY, restart_button)
     restart_text = font.render("Restart", True, WHITE)
     screen.blit(restart_text, (restart_button.x + 15, restart_button.y + 5))
 
     # Menu 버튼
     menu_button = pygame.Rect(WIDTH // 2 - 70, HEIGHT // 2 + 120, 150, 40)
-    pygame.draw.rect(screen, BLUE, menu_button)
+    pygame.draw.rect(screen, GREEN, menu_button)
     menu_text = font.render("Menu", True, WHITE)
     screen.blit(menu_text, (menu_button.x + 30, menu_button.y + 5))
 
     # Exit 버튼
     exit_button = pygame.Rect(WIDTH // 2 - 70, HEIGHT // 2 + 180, 150, 40)
-    pygame.draw.rect(screen, BLUE, exit_button)
+    pygame.draw.rect(screen, RED, exit_button)
     exit_text = font.render("Exit", True, WHITE)
     screen.blit(exit_text, (exit_button.x + 35, exit_button.y + 5))
 
@@ -438,19 +445,19 @@ while running:
 
         # Retry 버튼
         retry_button = pygame.Rect(WIDTH // 2 - 50, HEIGHT // 2, 100, 40)
-        pygame.draw.rect(screen, BLUE, retry_button)
+        pygame.draw.rect(screen, NAVY, retry_button)
         retry_text = font.render("Retry", True, WHITE)
         screen.blit(retry_text, (retry_button.x + 10, retry_button.y + 5))
 
         # Menu 버튼
         menu_button = pygame.Rect(WIDTH // 2 - 50, HEIGHT // 2 + 60, 100, 40)
-        pygame.draw.rect(screen, BLUE, menu_button)
+        pygame.draw.rect(screen, GREEN, menu_button)
         menu_text = font.render("Menu", True, WHITE)
         screen.blit(menu_text, (menu_button.x + 15, menu_button.y + 5))
 
         # Exit 버튼
         exit_button = pygame.Rect(WIDTH // 2 - 50, HEIGHT // 2 + 120, 100, 40)
-        pygame.draw.rect(screen, BLUE, exit_button)
+        pygame.draw.rect(screen, RED, exit_button)
         exit_text = font.render("Exit", True, WHITE)
         screen.blit(exit_text, (exit_button.x + 20, exit_button.y + 5))
 
