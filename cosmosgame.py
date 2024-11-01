@@ -18,9 +18,14 @@ YELLOW = (255, 255, 0)
 GREEN = (0, 255, 0)
 NAVY = (75, 0, 130)
 PURPLE = (143, 0, 255)
+GRAY = (128, 128, 128)  # *** Added: GRAY 색상 추가 ***
 
 # 폰트 설정
 font = pygame.font.Font("game_font_1.ttf", 28)
+
+# 아이콘 설정
+icon_image = pygame.image.load("icon.png")  # 아이콘 이미지 파일 로드
+pygame.display.set_icon(icon_image)  # 프로그램 아이콘 설정
 
 # 게임 변수
 clock = pygame.time.Clock()
@@ -144,6 +149,45 @@ game_over = False
 # 게임 상태 변수 추가
 game_state = "START"  # Possible states: START, MAIN_GAME, BOSS_RAID, PAUSED, GAME_OVER
 
+# *** Added: 파티클 시스템 ***
+class Particle:
+    def __init__(self, pos, vel, radius, color, lifetime):
+        self.pos = list(pos)
+        self.vel = list(vel)
+        self.radius = radius
+        self.color = color
+        self.lifetime = lifetime  # in milliseconds
+        self.creation_time = pygame.time.get_ticks()
+
+    def update(self):
+        self.pos[0] += self.vel[0]
+        self.pos[1] += self.vel[1]
+        # Fade out over time
+        elapsed = pygame.time.get_ticks() - self.creation_time
+        if elapsed > self.lifetime:
+            return False
+        return True
+
+    def draw(self, surface):
+        elapsed = pygame.time.get_ticks() - self.creation_time
+        alpha = max(255 - (255 * elapsed) // self.lifetime, 0)
+        # Create a temporary surface for the particle with per-pixel alpha
+        temp_surface = pygame.Surface((self.radius * 2, self.radius * 2), pygame.SRCALPHA)
+        pygame.draw.circle(temp_surface, self.color + (alpha,), (self.radius, self.radius), self.radius)
+        surface.blit(temp_surface, (self.pos[0] - self.radius, self.pos[1] - self.radius))
+
+particles = []  # List to hold all particles
+
+def create_particle(pos, vel, radius, color, lifetime):
+    particles.append(Particle(pos, vel, radius, color, lifetime))
+# *** End of Added: 파티클 시스템 ***
+
+# *** Added: 보스 레이드 후 부스터 및 무적 지속 변수 ***
+post_boss_boost = False    # 보스 레이드 후 부스터 활성화 여부
+boost_start_time = 0       # 부스터 시작 시간
+BOOST_DURATION = 3000      # 부스터 지속 시간 (3초)
+BOOST_MULTIPLIER = 2.5     # 부스터 속도 배율
+
 # 초기 화면 표시 함수
 def show_start_screen():
     screen.blit(background_image_2, (0, 0))  # Ensure background is drawn first
@@ -231,7 +275,7 @@ def handle_invincibility():
     if invincible:
         invincible_text = font.render("Invincible!", True, YELLOW)
         screen.blit(invincible_text, (rocket_pos[0] - invincible_text.get_width() // 2, rocket_pos[1] - 40))
-        if pygame.time.get_ticks() - invincible_start_time > INVINCIBLE_DURATION:
+        if pygame.time.get_ticks() - invincible_start_time > INVINCIBLE_DURATION and not post_boss_boost:
             invincible = False  # 무적 해제
 
 # 로켓 렌더링 함수 - 색상 변경 효과 포함
@@ -247,6 +291,8 @@ def check_collisions():
             score += 10
             dusts.remove(dust)
             dusts.append(create_dust())
+            # *** Added: 먼지를 먹을 때 파티클 생성 ***
+            create_particle(dust.center, (0, -2), 5, YELLOW, 500)
 
     # 무적 상태가 아닐 때만 충돌 검사
     if not invincible:
@@ -261,11 +307,12 @@ def check_collisions():
                 obstacle_speeds.append(random.randint(1, 10))
                 if lives <= 0:
                     game_over = True
-                    break
-                # 무적 상태 시작
-                render_rocket()
-                invincible = True
-                invincible_start_time = pygame.time.get_ticks()           
+                else:
+                    # *** Added: 충돌 시 파티클 생성 ***
+                    create_particle(rocket_pos, (random.uniform(-2, 2), random.uniform(-2, 2)), 7, RED, 700)
+                    # 무적 상태 시작
+                    invincible = True
+                    invincible_start_time = pygame.time.get_ticks()
                 return False
     return True
 
@@ -284,8 +331,10 @@ def check_blackhole_collision():
             rocket_pos[0] += math.cos(angle) * 3
             rocket_pos[1] += math.sin(angle) * 3
             rocket_angle += 10
-            if distance < 10:
+            if distance < 10 and not post_boss_boost:
                 game_over = True
+            # *** Added: 블랙홀 근처에서 파티클 생성 ***
+            create_particle(blackhole.center, (random.uniform(-1, 1), random.uniform(-1, 1)), 3, PURPLE, 300)
 
 # 초기 먼지 및 장애물 생성
 for _ in range(10):
@@ -315,18 +364,38 @@ def reset_game():
     BOSS_RAID = False  # Reset boss raid status
     last_boss_raid_score = 0  # Reset last boss raid score
     game_state = "MAIN_GAME"  # Set game state to main game
+    particles.clear()  # *** Added: 파티클 초기화 ***
 
 # 로켓 이동 함수
 def move_rocket(keys):
     global rocket_image, rocket_angle
-    if keys[pygame.K_a]: rocket_angle = 45
-    elif keys[pygame.K_d]: rocket_angle = -45
-    else: rocket_angle = 0
+    if keys[pygame.K_a]:
+        rocket_angle = 45
+    elif keys[pygame.K_d]:
+        rocket_angle = -45
+    else:
+        rocket_angle = 0
     rocket_image = pygame.transform.rotate(original_rocket_image, rocket_angle)
-    if keys[pygame.K_w]: rocket_pos[1] -= 5
-    if keys[pygame.K_s]: rocket_pos[1] += 5
-    if keys[pygame.K_a]: rocket_pos[0] -= 5
-    if keys[pygame.K_d]: rocket_pos[0] += 5
+    if keys[pygame.K_w]:
+        rocket_pos[1] -= 5
+        # *** Modified: 회색 파티클 제거하고 하얀색 및 노란색 파티클 생성 ***
+        create_particle((rocket_pos[0], rocket_pos[1] + 25), (random.uniform(-1, 1), 2), 3, WHITE, 500)
+        create_particle((rocket_pos[0], rocket_pos[1] + 25), (random.uniform(-1, 1), 2), 3, YELLOW, 500)
+    if keys[pygame.K_s]:
+        rocket_pos[1] += 5
+        # *** Modified: 회색 파티클 제거하고 하얀색 및 노란색 파티클 생성 ***
+        create_particle((rocket_pos[0], rocket_pos[1] - 25), (random.uniform(-1, 1), -2), 3, WHITE, 500)
+        create_particle((rocket_pos[0], rocket_pos[1] - 25), (random.uniform(-1, 1), -2), 3, YELLOW, 500)
+    if keys[pygame.K_a]:
+        rocket_pos[0] -= 5
+        # *** Modified: 회색 파티클 제거하고 하얀색 및 노란색 파티클 생성 ***
+        create_particle((rocket_pos[0] + 25, rocket_pos[1]), (2, random.uniform(-1, 1)), 3, WHITE, 500)
+        create_particle((rocket_pos[0] + 25, rocket_pos[1]), (2, random.uniform(-1, 1)), 3, YELLOW, 500)
+    if keys[pygame.K_d]:
+        rocket_pos[0] += 5
+        # *** Modified: 회색 파티클 제거하고 하얀색 및 노란색 파티클 생성 ***
+        create_particle((rocket_pos[0] - 25, rocket_pos[1]), (-2, random.uniform(-1, 1)), 3, WHITE, 500)
+        create_particle((rocket_pos[0] - 25, rocket_pos[1]), (-2, random.uniform(-1, 1)), 3, YELLOW, 500)
     rocket_pos[0] = max(0, min(WIDTH, rocket_pos[0]))
     rocket_pos[1] = max(0, min(HEIGHT, rocket_pos[1]))
 
@@ -350,6 +419,8 @@ def move_fireballs():
                 lives -= 1
                 invincible = True  # 무적 상태 시작
                 invincible_start_time = pygame.time.get_ticks()  # 무적 상태 시작 시간 설정
+                # *** Added: 파이어볼과 충돌 시 파티클 생성 ***
+                create_particle(fireball["rect"].center, (random.uniform(-2, 2), random.uniform(-2, 2)), 5, ORANGE, 700)
             fireballs.remove(fireball)
             if lives <= 0:
                 game_over = True
@@ -447,6 +518,20 @@ while running:
                 # We'll handle game over in the "GAME_OVER" state
                 pass
 
+        # *** 부스터 활성화 상태일 때 스크롤 속도를 조절하고, 무적 상태 표시 ***
+        if post_boss_boost:
+            current_scroll_speed = scroll_speed * BOOST_MULTIPLIER
+            if pygame.time.get_ticks() - boost_start_time >= BOOST_DURATION:
+                post_boss_boost = False
+                current_scroll_speed = scroll_speed
+                invincible = False
+            else:
+                boost_text = font.render("BOOST MODE!", True, ORANGE)
+                screen.blit(boost_text, (WIDTH // 2 - boost_text.get_width() // 2, HEIGHT // 2 - 80))
+                invincible = True  # 부스터 동안 무적 상태 유지
+        else:
+            current_scroll_speed = scroll_speed  # 기본 스크롤 속도 적용
+
         if not game_over:
             if score >= level * level_up_score_threshold:
                 level += 1
@@ -469,19 +554,27 @@ while running:
             move_fireballs()
             render_rocket()
             
+            # *** Added: 파티클 업데이트 및 그리기 ***
+            for particle in particles[:]:
+                if not particle.update():
+                    particles.remove(particle)
+                else:
+                    particle.draw(screen)
+            # *** End of Added: 파티클 업데이트 및 그리기 ***
+
             # 화면 그리기
             for fireball in fireballs:
                 screen.blit(fireball_image, fireball["rect"].topleft)
 
             for dust in dusts:
-                dust.y += scroll_speed
+                dust.y += current_scroll_speed
                 if dust.y > HEIGHT:
                     dusts.remove(dust)
                     dusts.append(create_dust())
                 screen.blit(dust_image, dust.topleft)
 
             for i, obstacle in enumerate(obstacles):
-                obstacle.y += scroll_speed
+                obstacle.y += current_scroll_speed
                 if obstacle.y > HEIGHT:
                     obstacles.remove(obstacle)
                     obstacles.append(create_obstacle())
@@ -498,16 +591,18 @@ while running:
                 if math.hypot(rocket_pos[0] - life.centerx, rocket_pos[1] - life.centery) < 25:
                     lives = min(lives + 1, max_lives)
                     extra_lives.remove(life)
+                    # *** Added: 생명 획득 시 파티클 생성 ***
+                    create_particle(life.center, (random.uniform(-1, 1), random.uniform(-1, 1)), 5, GREEN, 500)
 
             for life in extra_lives:
-                life.y += scroll_speed
+                life.y += current_scroll_speed
                 if life.y > HEIGHT:
                     extra_lives.remove(life)
                 else:
                     screen.blit(heart_image, life)
 
             for blackhole in blackholes:
-                blackhole.y += scroll_speed - 1
+                blackhole.y += current_scroll_speed - 1
                 if blackhole.y > HEIGHT:
                     blackholes.remove(blackhole)
                     blackholes.append(create_blackhole())
@@ -572,6 +667,12 @@ while running:
                 BOSS_RAID = False
                 game_state = "MAIN_GAME"
                 last_boss_raid_score = score  # **Update the last_boss_raid_score here**
+
+                # *** 보스 레이드 후 부스터 상태 활성화 ***
+                post_boss_boost = True
+                boost_start_time = pygame.time.get_ticks()
+                invincible = True
+
                 continue  # Proceed to the main game
 
             # 로켓 이동 처리
@@ -591,12 +692,19 @@ while running:
                     boss_current_scale = 1.0
                     invincible = True
                     invincible_start_time = pygame.time.get_ticks()
+                    # *** Added: 보스와 충돌 시 파티클 생성 ***
+                    create_particle(rocket_pos, (random.uniform(-3, 3), random.uniform(-3, 3)), 10, RED, 1000)
 
             # 블랙홀 흡입 기능 유지 (optional)
             check_blackhole_collision()
 
-            # 충돌 체크: 로켓과 보스 간 충돌 (Avoid duplicate handling)
-            # **Removed duplicated collision handling to prevent interference with the survival timer**
+            # *** Added: 파티클 업데이트 및 그리기 ***
+            for particle in particles[:]:
+                if not particle.update():
+                    particles.remove(particle)
+                else:
+                    particle.draw(screen)
+            # *** End of Added: 파티클 업데이트 및 그리기 ***
 
             handle_invincibility()
             check_blackhole_collision()
