@@ -6,12 +6,11 @@ import math
 pygame.init()
 WIDTH, HEIGHT = 800, 600
 screen = pygame.display.set_mode((WIDTH, HEIGHT))
-pygame.display.set_caption("무한 우주 먼지 수집 바운스볼")
+pygame.display.set_caption("무한 우주 먼지 수집 로켓")
 
 # 색상 정의
 WHITE = (255, 255, 255)
 BLACK = (0, 0, 0)
-YELLOW = (255, 255, 0)
 BLUE = (0, 0, 255)
 
 # 폰트 설정
@@ -20,51 +19,115 @@ font = pygame.font.Font(None, 36)
 # 게임 변수
 clock = pygame.time.Clock()
 score = 0
-scroll_speed = 2  # 맵 스크롤 초기 속도
-max_scroll_speed = 10  # 스크롤 최대 속도
-speed_increase_interval = 5000  # 속도 증가 간격 (밀리초)
+scroll_speed = 2
+max_scroll_speed = 10
+speed_increase_interval = 5000
 
-# 바운스볼 설정
-ball_radius = 20
-ball_speed = 8  # 기존 5에서 8로 속도 증가
-ball_pos = [WIDTH // 2, HEIGHT // 2]
+# 로켓 설정
+rocket_image = pygame.image.load("rocket.png")  # 로켓 이미지 로드
+rocket_image = pygame.transform.scale(rocket_image, (50, 50))  # 로켓 크기를 50x50으로 조정
+rocket_pos = [WIDTH // 2, HEIGHT // 2]  # 화면 중앙에서 시작
+rocket_angle = 0  # 로켓의 회전 각도
+original_rocket_image = rocket_image  # 원래의 로켓 이미지 보관
 
-# 장애물 이미지 로드 및 설정
-rock_image = pygame.image.load("rock_obstacle.png")  # 투명 배경의 PNG 이미지 로드
-rock_image = pygame.transform.scale(rock_image, (40, 40))  # 이미지 크기 조정
-rock_angle = 0  # 회전 각도
+# 장애물 및 먼지 리스트
+dusts = []
+obstacles = []
+blackholes = []
 
-# 장애물 리스트 (이미지와 위치 정보를 함께 저장)
-obstacles = [{"rect": pygame.Rect(random.randint(0, WIDTH), random.randint(-HEIGHT, 0), 40, 40), "angle": 0} for _ in range(5)]
+# 장애물 이미지 로드
+rock_image = pygame.image.load("rock_obstacle.png")  # 기존 운석 이미지
+rock_image = pygame.transform.scale(rock_image, (40, 40))  # 운석 크기를 40x40으로 조정
 
-# 먼지 생성 함수
+# 블랙홀 이미지 로드
+blackhole_image = pygame.image.load("black.png")  # 블랙홀 이미지 (black.png 파일)
+blackhole_image = pygame.transform.scale(blackhole_image, (80, 80))  # 블랙홀 크기를 80x80으로 조정
+
+# 먼지 및 장애물 생성 함수
 def create_dust():
     x = random.randint(0, WIDTH)
     y = random.randint(-HEIGHT, 0)
     return pygame.Rect(x, y, 8, 8)
 
-# 먼지 리스트
-dusts = [create_dust() for _ in range(10)]
+def create_obstacle():
+    x = random.randint(0, WIDTH)
+    y = random.randint(-HEIGHT, 0)
+    return pygame.Rect(x, y, 40, 40)
 
-# 바운스 함수
-def move_ball(keys):
-    if keys[pygame.K_w]: ball_pos[1] -= ball_speed
-    if keys[pygame.K_s]: ball_pos[1] += ball_speed
-    if keys[pygame.K_a]: ball_pos[0] -= ball_speed
-    if keys[pygame.K_d]: ball_pos[0] += ball_speed
+def create_blackhole():
+    x = random.randint(0, WIDTH)
+    y = random.randint(-HEIGHT, 0)
+    return pygame.Rect(x, y, 80, 80)
+
+# 초기 먼지 및 장애물 생성
+for _ in range(10):
+    dusts.append(create_dust())
+for _ in range(5):
+    obstacles.append(create_obstacle())
+for _ in range(2):  # 블랙홀은 적은 빈도로 나타나도록 설정
+    blackholes.append(create_blackhole())
+
+# 로켓 이동 함수
+def move_rocket(keys):
+    global rocket_image, rocket_angle
+
+    # A와 D 키에 따라 로켓 기울기 조정
+    if keys[pygame.K_a]:
+        rocket_angle = 45  # 왼쪽으로 기울기
+    elif keys[pygame.K_d]:
+        rocket_angle = -45  # 오른쪽으로 기울기
+    else:
+        rocket_angle = 0  # 키에서 손을 떼면 원래 상태로 복구
+
+    # 회전된 로켓 이미지 생성
+    rocket_image = pygame.transform.rotate(original_rocket_image, rocket_angle)
+    if keys[pygame.K_w]: rocket_pos[1] -= 5
+    if keys[pygame.K_s]: rocket_pos[1] += 5
+    if keys[pygame.K_a]: rocket_pos[0] -= 5
+    if keys[pygame.K_d]: rocket_pos[0] += 5
+
+# 픽셀 충돌 체크 함수
+def check_pixel_collision(obstacle):
+    rotated_rocket_rect = rocket_image.get_rect(center=(rocket_pos[0], rocket_pos[1]))
+    obstacle_rect = rock_image.get_rect(center=(obstacle.x, obstacle.y))
+
+    # 충돌 체크를 위한 mask 생성
+    rocket_mask = pygame.mask.from_surface(rocket_image)
+    obstacle_mask = pygame.mask.from_surface(rock_image)
+
+    # 두 개의 rect 중심에서 offset 계산
+    offset = (obstacle_rect.x - rotated_rocket_rect.x, obstacle_rect.y - rotated_rocket_rect.y)
+    collision_point = rocket_mask.overlap(obstacle_mask, offset)
+
+    return collision_point is not None  # 충돌 여부 반환
+
+# 블랙홀 흡입 함수
+def check_blackhole_collision():
+    global rocket_pos, rocket_angle, game_over
+    for blackhole in blackholes:
+        distance = math.hypot(rocket_pos[0] - blackhole.centerx, rocket_pos[1] - blackhole.centery)
+        if distance < 100:
+            direction_x = blackhole.centerx - rocket_pos[0]
+            direction_y = blackhole.centery - rocket_pos[1]
+            angle = math.atan2(direction_y, direction_x)
+            rocket_pos[0] += math.cos(angle) * 3
+            rocket_pos[1] += math.sin(angle) * 3
+            rocket_angle += 10
+
+            if distance < 20:
+                game_over = True
 
 # 충돌 체크 함수
 def check_collisions():
     global score
     for dust in dusts[:]:
-        if math.hypot(ball_pos[0] - dust.x, ball_pos[1] - dust.y) < ball_radius:
+        if math.hypot(rocket_pos[0] - dust.x, rocket_pos[1] - dust.y) < 25:
             score += 10
             dusts.remove(dust)
             dusts.append(create_dust())
 
     for obstacle in obstacles:
-        obstacle_rect = obstacle["rect"]
-        if math.hypot(ball_pos[0] - obstacle_rect.x, ball_pos[1] - obstacle_rect.y) < ball_radius + 20:
+        if check_pixel_collision(obstacle):  # 픽셀 충돌 검사
             return True
     return False
 
@@ -83,54 +146,56 @@ while running:
             if retry_button.collidepoint(mouse_pos):
                 score = 0
                 scroll_speed = 2
-                obstacles = [{"rect": pygame.Rect(random.randint(0, WIDTH), random.randint(-HEIGHT, 0), 40, 40), "angle": 0} for _ in range(5)]
+                blackholes = [create_blackhole() for _ in range(2)]
+                obstacles = [create_obstacle() for _ in range(5)]
                 dusts = [create_dust() for _ in range(10)]
-                ball_pos = [WIDTH // 2, HEIGHT // 2]
+                rocket_pos = [WIDTH // 2, HEIGHT // 2]
                 game_over = False
 
     if not game_over:
-        # 시간 경과에 따라 스크롤 속도 증가
         if current_time % speed_increase_interval < 50:
             scroll_speed = min(scroll_speed + 1, max_scroll_speed)
 
-        # 이동 및 충돌 체크
         keys = pygame.key.get_pressed()
-        move_ball(keys)
+        move_rocket(keys)
         if check_collisions():
             game_over = True
 
-        # 먼지 이동
+        check_blackhole_collision()
+
         for dust in dusts:
             dust.y += scroll_speed
             if dust.y > HEIGHT:
                 dusts.remove(dust)
                 dusts.append(create_dust())
 
-        # 장애물 이동 및 회전
         for obstacle in obstacles:
-            obstacle["rect"].y += scroll_speed
-            obstacle["angle"] += 5  # 각 장애물이 회전하도록 각도 증가
-            if obstacle["rect"].y > HEIGHT:
-                obstacle["rect"].y = random.randint(-HEIGHT, 0)
-                obstacle["rect"].x = random.randint(0, WIDTH)
+            obstacle.y += scroll_speed
+            if obstacle.y > HEIGHT:
+                obstacles.remove(obstacle)
+                obstacles.append(create_obstacle())
 
-            # 회전된 이미지 그리기
-            rotated_image = pygame.transform.rotate(rock_image, obstacle["angle"])
-            new_rect = rotated_image.get_rect(center=obstacle["rect"].center)
-            screen.blit(rotated_image, new_rect.topleft)
-
-        # 먼지와 바운스볼 그리기
         for dust in dusts:
             pygame.draw.rect(screen, WHITE, dust)
-        pygame.draw.circle(screen, YELLOW, (int(ball_pos[0]), int(ball_pos[1])), int(ball_radius))
+        for obstacle in obstacles:
+            screen.blit(rock_image, obstacle)
 
-        # 텍스트 표시
+        for blackhole in blackholes:
+            blackhole.y += scroll_speed - 1
+            if blackhole.y > HEIGHT:
+                blackholes.remove(blackhole)
+                blackholes.append(create_blackhole())
+            screen.blit(blackhole_image, blackhole)
+
+        rotated_rocket_rect = rocket_image.get_rect(center=(rocket_pos[0], rocket_pos[1]))
+        screen.blit(rocket_image, rotated_rocket_rect.topleft)
+
         score_text = font.render(f"Score: {score}", True, WHITE)
         screen.blit(score_text, (10, 10))
 
     else:
         screen.fill(BLACK)
-        end_text = font.render(f"게임 오버! 최종 점수: {score}", True, WHITE)
+        end_text = font.render(f"Game Over! Final Score: {score}", True, WHITE)
         screen.blit(end_text, (WIDTH // 2 - end_text.get_width() // 2, HEIGHT // 2 - 30))
         retry_button = pygame.Rect(WIDTH // 2 - 50, HEIGHT // 2 + 50, 100, 40)
         pygame.draw.rect(screen, BLUE, retry_button)
