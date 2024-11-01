@@ -14,11 +14,12 @@ BLACK = (0, 0, 0)
 BLUE = (0, 0, 255)
 
 # 폰트 설정
-font = pygame.font.Font(None, 36)
+font = pygame.font.Font("game_font_1.ttf", 28)
 
 # 게임 변수
 clock = pygame.time.Clock()
 score = 0
+highscore = 0
 scroll_speed = 5
 max_scroll_speed = 10
 speed_increase_interval = 5000
@@ -205,6 +206,7 @@ for _ in range(2):
 # 게임 초기화 함수
 def reset_game():
     global score, level, lives, scroll_speed, game_over, fireballs, obstacles, dusts, blackholes, extra_lives, rocket_pos, obstacle_angles, obstacle_speeds
+    global highscore
     score = 0
     level = 1
     lives = 3
@@ -319,7 +321,7 @@ while running:
                 score = 0
                 level = 1
                 lives = 3
-                scroll_speed = 2
+                scroll_speed = 5
                 blackholes = [create_blackhole() for _ in range(2)]
                 obstacles = [create_obstacle() for _ in range(5)]
                 dusts = [create_dust() for _ in range(10)]
@@ -418,9 +420,10 @@ while running:
 
         score_text = font.render(f"Score: {score}", True, WHITE)
         level_text = font.render(f"Level: {level}", True, WHITE)
+        highscore_text = font.render(f"Highscore: {highscore}", True, WHITE)
         screen.blit(score_text, (10, 10))
         screen.blit(level_text, (10, 50))
-
+        screen.blit(highscore_text, (10, 90))
         for i in range(lives):
             screen.blit(heart_image, (WIDTH - (i + 1) * 40, 10))
 
@@ -428,11 +431,15 @@ while running:
         screen.fill(BLACK)
         end_text = font.render(f"Game Over! Final Score: {score}", True, WHITE)
         screen.blit(end_text, (WIDTH // 2 - end_text.get_width() // 2, HEIGHT // 2 - 30))
-        retry_button = pygame.Rect(WIDTH // 2 - 50, HEIGHT // 2 + 50, 100, 40)
+        if score > highscore:
+          highscore = score
+        highscore_text = font.render(f"Highscore: {highscore}", True, WHITE)  # 최고 점수 표시
+        screen.blit(highscore_text, (WIDTH // 2 - highscore_text.get_width() // 2, HEIGHT // 2 + 30))
+        retry_button = pygame.Rect(WIDTH // 2 - 50, HEIGHT // 2 + 70, 100, 40)
         pygame.draw.rect(screen, BLUE, retry_button)
         retry_text = font.render("Retry", True, WHITE)
         screen.blit(retry_text, (retry_button.x + 10, retry_button.y + 5))
-
+    
     pygame.display.flip()
     clock.tick(30)
 
