@@ -193,6 +193,23 @@ for _ in range(5):
 for _ in range(2):
     blackholes.append(create_blackhole())
 
+# 게임 초기화 함수
+def reset_game():
+    global score, level, lives, scroll_speed, game_over, fireballs, obstacles, dusts, blackholes, extra_lives, rocket_pos, obstacle_angles, obstacle_speeds
+    score = 0
+    level = 1
+    lives = 3
+    scroll_speed = 5
+    blackholes = [create_blackhole() for _ in range(2)]
+    obstacles = [create_obstacle() for _ in range(5)]
+    dusts = [create_dust() for _ in range(10)]
+    rocket_pos = [WIDTH // 2, HEIGHT // 2]
+    obstacle_angles = [0] * len(obstacles)
+    obstacle_speeds = [random.randint(1, 10) for _ in range(len(obstacles))]
+    extra_lives.clear()
+    fireballs.clear()
+    game_over = False
+
 # 로켓 이동 함수
 def move_rocket(keys):
     global rocket_image, rocket_angle
@@ -228,22 +245,34 @@ def move_fireballs():
 def show_pause_menu():
     screen.fill(BLACK)
     pause_text = font.render("Game Paused", True, WHITE)
-    screen.blit(pause_text, (WIDTH // 2 - pause_text.get_width() // 2, HEIGHT // 2 - 60))
-    
+    screen.blit(pause_text, (WIDTH // 2 - pause_text.get_width() // 2, HEIGHT // 2 - 100))
+
     # Continue 버튼
     continue_button = pygame.Rect(WIDTH // 2 - 70, HEIGHT // 2, 150, 40)
     pygame.draw.rect(screen, BLUE, continue_button)
     continue_text = font.render("Continue", True, WHITE)
-    screen.blit(continue_text, (continue_button.x + 10, continue_button.y + 5))
+    screen.blit(continue_text, (continue_button.x + 15, continue_button.y + 5))
+
+    # Restart 버튼
+    restart_button = pygame.Rect(WIDTH // 2 - 70, HEIGHT // 2 + 60, 150, 40)
+    pygame.draw.rect(screen, BLUE, restart_button)
+    restart_text = font.render("Restart", True, WHITE)
+    screen.blit(restart_text, (restart_button.x + 15, restart_button.y + 5))
+
+    # Menu 버튼
+    menu_button = pygame.Rect(WIDTH // 2 - 70, HEIGHT // 2 + 120, 150, 40)
+    pygame.draw.rect(screen, BLUE, menu_button)
+    menu_text = font.render("Menu", True, WHITE)
+    screen.blit(menu_text, (menu_button.x + 30, menu_button.y + 5))
 
     # Exit 버튼
-    exit_button = pygame.Rect(WIDTH // 2 - 70, HEIGHT // 2 + 60, 150, 40)
+    exit_button = pygame.Rect(WIDTH // 2 - 70, HEIGHT // 2 + 180, 150, 40)
     pygame.draw.rect(screen, BLUE, exit_button)
     exit_text = font.render("Exit", True, WHITE)
-    screen.blit(exit_text, (exit_button.x + 25, exit_button.y + 5))
+    screen.blit(exit_text, (exit_button.x + 35, exit_button.y + 5))
 
     pygame.display.flip()
-    return continue_button, exit_button
+    return continue_button, restart_button, menu_button, exit_button
 
 # 메인 게임 루프
 running = True
@@ -294,15 +323,22 @@ while running:
 
     # 일시 정지 상태 처리
     if paused:
-        continue_button, exit_button = show_pause_menu()
+        continue_button, restart_button, menu_button, exit_button = show_pause_menu()
         for event in pygame.event.get():
             if event.type == pygame.MOUSEBUTTONDOWN:
                 mouse_pos = event.pos
                 if continue_button.collidepoint(mouse_pos):
                     paused = False  # 게임 계속
+                elif restart_button.collidepoint(mouse_pos):
+                    reset_game()  # 게임 재시작
+                    paused = False
+                elif menu_button.collidepoint(mouse_pos):
+                    reset_game()
+                    game_started = False  # 초기 화면으로 돌아가기
+                    paused = False
                 elif exit_button.collidepoint(mouse_pos):
                     running = False  # 게임 종료
-        continue
+        continue  # 일시 정지 상태에서는 게임 루프 중단
 
     if not game_over:
         if score >= level * level_up_score_threshold:
