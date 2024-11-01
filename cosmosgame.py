@@ -19,10 +19,11 @@ font = pygame.font.Font(None, 36)
 # 게임 변수
 clock = pygame.time.Clock()
 score = 0
-scroll_speed = 2
+scroll_speed = 5
 max_scroll_speed = 10
 speed_increase_interval = 5000
-lives = 3  # 플레이어의 목숨 수
+lives = 3  # 플레이어의 초기 목숨 수
+max_lives = 5  # 최대 목숨 개수
 
 # 레벨 시스템 추가
 level = 1
@@ -47,6 +48,7 @@ dust_image = pygame.transform.scale(dust_image, (15, 15))  # 먼지 이미지를
 dusts = []
 obstacles = []
 blackholes = []
+extra_lives = []  # 화면에 표시되는 목숨 아이템 목록
 
 # 장애물 이미지 로드
 rock_image = pygame.image.load("rock_obstacle.png")  # 기존 운석 이미지
@@ -75,6 +77,11 @@ def create_blackhole():
     x = random.randint(0, WIDTH)
     y = random.randint(-HEIGHT, 0)
     return pygame.Rect(x, y, 80, 80)
+
+def create_extra_life():
+    x = random.randint(0, WIDTH - 30)
+    y = random.randint(-HEIGHT, 0)
+    return pygame.Rect(x, y, 30, 30)  # 크기는 heart.png와 맞게 30x30으로 설정
 
 # 초기 먼지 및 장애물 생성
 for _ in range(10):
@@ -181,6 +188,7 @@ while running:
                 rocket_pos = [WIDTH // 2, HEIGHT // 2]
                 obstacle_angles = [0] * len(obstacles)  # 각도 초기화
                 obstacle_speeds = [random.randint(1, 10) for _ in range(len(obstacles))]  # 각 운석의 회전 속도 재설정
+                extra_lives.clear()  # 목숨 아이템 초기화
                 game_over = False
 
     if not game_over:
@@ -193,6 +201,9 @@ while running:
             obstacle_speeds.append(random.randint(1, 10))  # 새 장애물의 회전 속도 추가
             if level % 2 == 0:
                 blackholes.append(create_blackhole())  # 블랙홀 추가
+            
+            # 목숨 아이템 추가
+            extra_lives.append(create_extra_life())
 
         keys = pygame.key.get_pressed()
         move_rocket(keys)
@@ -221,8 +232,21 @@ while running:
             rotated_rect = rotated_rock_image.get_rect(center=(obstacle.x + 20, obstacle.y + 20))
             screen.blit(rotated_rock_image, rotated_rect.topleft)
 
+        # 목숨 아이템 표시 및 충돌 처리
+        for life in extra_lives[:]:
+            if math.hypot(rocket_pos[0] - life.centerx, rocket_pos[1] - life.centery) < 25:
+                lives = min(lives + 1, max_lives)  # 목숨 증가, 최대 5로 제한
+                extra_lives.remove(life)  # 획득한 목숨 아이템 제거
+
+        for life in extra_lives:
+            life.y += scroll_speed
+            if life.y > HEIGHT:
+                extra_lives.remove(life)
+            else:
+                screen.blit(heart_image, life)
+
         for dust in dusts:
-            screen.blit(dust_image, dust.topleft)  # 먼지 이미지를 화면에 표시
+            screen.blit(dust_image, dust.topleft)
 
         for blackhole in blackholes:
             blackhole.y += scroll_speed - 1
